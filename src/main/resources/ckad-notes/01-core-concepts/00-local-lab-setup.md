@@ -8,13 +8,13 @@
 
 Watching videos doesn't pass CKAD. The exam is **performance-based** — 15-20 hands-on tasks in 2 hours, typing real `kubectl` commands and writing real YAML on a remote Linux desktop. People who only watch and don't practice fail. The local lab gives me a real Kubernetes cluster to break and rebuild as I learn.
 
-**Specific to my situation:** I can't take the actual exam on my JPMC laptop (Linux Foundation rules — no employer machines unless you have admin). My personal ThinkPad is the right call long-term too, since it'll host the lab without IT restrictions.
+**Specific to my situation:** I can't take the actual exam on my work laptop (Linux Foundation rules — no employer machines unless you have admin). My personal ThinkPad is the right call long-term too, since it'll host the lab without IT restrictions.
 
 ---
 
 ## 2. The full stack — what runs where
 
-![Local lab stack](diagrams/17-local-lab-stack.png)
+![Local lab stack](./diagrams/17-local-lab-stack.png)
 
 Reading top to bottom:
 
@@ -196,7 +196,7 @@ These shortcuts save 10-20 minutes total on a 2-hour exam. Not earth-shattering 
 
 ## 5. The exam environment — what to expect
 
-![Local vs exam](diagrams/18-local-vs-exam.png)
+![Local vs exam](./diagrams/18-local-vs-exam.png)
 
 ### What the exam actually looks like
 
@@ -320,7 +320,7 @@ kubectl config use-context kind-experiment
 
 ## 7. Vim — the survival kit
 
-Vim is on every Linux system that ships with a base install: the CKAD exam environment, every container you'll `kubectl exec` into, kind nodes, JPMC servers, and the Ubuntu shell. Nano is friendlier but it's not always there. Learn enough vim to not be blocked.
+Vim is on every Linux system that ships with a base install: the CKAD exam environment, every container you'll `kubectl exec` into, kind nodes, corporate Linux servers, and the Ubuntu shell. Nano is friendlier but it's not always there. Learn enough vim to not be blocked.
 
 You'll also stop being mystified by:
 - The screen that appears when you run `git commit` without `-m`
@@ -432,7 +432,7 @@ VS Code opens, editing the WSL filesystem. Useful additional extensions:
 
 ## 9. Future-proofing — the home lab roadmap
 
-![Home lab roadmap](diagrams/19-homelab-roadmap.png)
+![Home lab roadmap](./diagrams/19-homelab-roadmap.png)
 
 ### Phase 1 — current state
 
@@ -558,7 +558,7 @@ kubectl get namespaces
 
 A week before the exam:
 - [ ] Run the PSI System Check (link comes with registration)
-- [ ] Test the personal laptop, not the JPMC one
+- [ ] Test the personal laptop, not the work one
 - [ ] Make sure I have a quiet room with no clutter visible
 - [ ] Webcam works, microphone works
 - [ ] Single monitor only — disconnect any external displays

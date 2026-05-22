@@ -14,7 +14,7 @@ A **Kubernetes cluster** is a group of machines (physical or VMs) working togeth
 
 `kubectl` always talks to the master. The master orchestrates the workers. You never `kubectl` directly into a worker — requests flow through the master, which dispatches the work.
 
-![Cluster overview](diagrams/01-cluster-overview.png)
+![Cluster overview](./diagrams/01-cluster-overview.png)
 
 ---
 
@@ -38,7 +38,7 @@ Kubernetes is not one program. It's a **collection of components**, split betwee
 
 Four components live on the master. The **API server is the hub** — every other component talks through it. The scheduler and controller-manager **never read or write etcd directly**; they go through the API server.
 
-![Master node components](diagrams/02-master-node.png)
+![Master node components](./diagrams/02-master-node.png)
 
 ### kube-apiserver
 
@@ -77,7 +77,7 @@ Four components live on the master. The **API server is the hub** — every othe
 
 Three components run on every worker.
 
-![Worker node components](diagrams/03-worker-node.png)
+![Worker node components](./diagrams/03-worker-node.png)
 
 ### kubelet
 
@@ -106,7 +106,7 @@ Three components run on every worker.
 
 This ties everything together.
 
-![Pod creation flow](diagrams/04-pod-creation-flow.png)
+![Pod creation flow](./diagrams/04-pod-creation-flow.png)
 
 1. **kubectl run nginx** — kubectl sends a REST POST to the API server.
 2. **kube-apiserver** validates the request and writes the pod object to etcd.

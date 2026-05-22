@@ -8,13 +8,13 @@
 
 A single pod is a single point of failure. If it crashes, the application is down. If the node it's on goes down, the application is down.
 
-In real production environments, you don't run one of anything. At Visa we ran 4 pods per app in prod, 3 in CTE — minimum, by policy. JPMC almost certainly has similar minimums. The reasons:
+In real production environments, you don't run one of anything. At Visa we ran 4 pods per app in prod, 3 in CTE — minimum, by policy. Most large enterprises have similar minimums. The reasons:
 
 - **Resilience to pod crashes** — if one pod OOMs or hits a bug, the others keep serving traffic.
 - **Resilience to node failures** — pods land on different nodes, so a node going down only takes some replicas with it.
 - **Load distribution** — incoming requests get spread across pods, so no single pod is overwhelmed.
 
-![High availability](diagrams/20-ha-replicas.png)
+![High availability](./diagrams/20-ha-replicas.png)
 
 The big idea: **even with a single replica**, the controller still gives you self-healing. If your one pod dies, the controller starts a replacement. So even when you only need one running instance, you should still use a controller to manage it — never just create a bare pod.
 
@@ -26,7 +26,7 @@ The big idea: **even with a single replica**, the controller still gives you sel
 
 There are two flavors of this concept. They do the same thing — keep N copies of a pod running — but differ in age and capabilities.
 
-![RC vs RS](diagrams/21-rc-vs-rs.png)
+![RC vs RS](./diagrams/21-rc-vs-rs.png)
 
 | | ReplicationController (RC) | ReplicaSet (RS) |
 |---|---|---|
@@ -141,11 +141,11 @@ kubectl get pods
 
 This is the most important concept in this chapter. The selector is how the ReplicaSet knows *which pods belong to it*. Without it, the RS doesn't know what to manage.
 
-![Labels and selectors](diagrams/22-labels-selectors.png)
+![Labels and selectors](./diagrams/22-labels-selectors.png)
 
 ### The mental model
 
-A real cluster runs **thousands of pods** across many applications. At Visa, your team's pods shared a cluster with completely unrelated apps — billing, fraud detection, data pipelines. JPMC is the same. The cluster doesn't care that those apps are unrelated; they're all just pods.
+A real cluster runs **thousands of pods** across many applications. At Visa, your team's pods shared a cluster with completely unrelated apps — billing, fraud detection, data pipelines. Most large enterprises are the same. The cluster doesn't care that those apps are unrelated; they're all just pods.
 
 The ReplicaSet has to filter that ocean of pods to figure out which ones are *its* pods. That filter is the selector.
 
@@ -186,7 +186,7 @@ If you change the selector but forget to update the template labels, you'll see 
 
 You've created a ReplicaSet with 3 replicas. Now you need 6. There are three ways.
 
-![Scaling methods](diagrams/23-scaling-methods.png)
+![Scaling methods](./diagrams/23-scaling-methods.png)
 
 ### Method 1: edit the YAML and re-apply (declarative)
 
@@ -340,4 +340,4 @@ kubectl delete -f rs.yaml
 
 ## Notes for next chapters
 
-Up next: **Deployments**. Here's where this all comes together. A Deployment creates and manages a ReplicaSet (which manages pods), and adds rolling updates, rollbacks, and rollout history on top. Remember the JPMC pod from chapter 04? Its `ownerReferences` showed it was created by a ReplicaSet. The next layer up — what created that ReplicaSet — is a Deployment. After the next chapter, you'll have the full picture.
+Up next: **Deployments**. Here's where this all comes together. A Deployment creates and manages a ReplicaSet (which manages pods), and adds rolling updates, rollbacks, and rollout history on top. Remember the production pod from chapter 04? Its `ownerReferences` showed it was created by a ReplicaSet. The next layer up — what created that ReplicaSet — is a Deployment. After the next chapter, you'll have the full picture.

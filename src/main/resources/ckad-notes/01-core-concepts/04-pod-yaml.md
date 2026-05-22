@@ -1,6 +1,6 @@
 # 04 — Pod YAML manifests
 
-> The instructor's video covered the basics: structure, the four required fields, `kubectl create -f`. This chapter expands on that with YAML rules you need to know, then walks through a real production pod (your JPMC `customer-account-alias-service`) field-by-field so you can read any pod manifest with confidence.
+> The instructor's video covered the basics: structure, the four required fields, `kubectl create -f`. This chapter expands on that with YAML rules you need to know, then walks through a real production pod (a sample enterprise `order-processing-service`) field-by-field so you can read any pod manifest with confidence.
 
 ---
 
@@ -18,7 +18,7 @@ You can also create most things imperatively with `kubectl run`, `kubectl create
 
 Every Kubernetes manifest has exactly these four fields at the top level. Missing any one fails validation.
 
-![YAML required fields](diagrams/14-yaml-required-fields.png)
+![YAML required fields](./diagrams/14-yaml-required-fields.png)
 
 ```yaml
 apiVersion: v1
@@ -83,7 +83,7 @@ The desired state — what this object should actually do. The contents differ b
 
 YAML uses whitespace to express hierarchy. This is the source of 80% of CKAD frustration if you're new to it.
 
-![YAML structure](diagrams/15-yaml-structure.png)
+![YAML structure](./diagrams/15-yaml-structure.png)
 
 ### Hard rules
 
@@ -240,44 +240,44 @@ The `describe` output is your debugging gold mine — the **Events** section at 
 
 ---
 
-## 6. Reading a real-world pod — JPMC walkthrough
+## 6. Reading a real-world pod — production walkthrough
 
-The instructor showed a 12-line pod manifest. Production pods are 200+ lines. Here's how to read your `customer-account-alias-service` pod section by section.
+The instructor showed a 12-line pod manifest. Production pods are 200+ lines. Here's how to read a real enterprise `order-processing-service` pod section by section.
 
-![Real-world pod anatomy](diagrams/16-real-world-pod-anatomy.png)
+![Real-world pod anatomy](./diagrams/16-real-world-pod-anatomy.png)
 
 ### metadata you'll see in production
 
 ```yaml
 metadata:
-  name: customer-account-alias-service-67d46c8c99-cm84s
-  namespace: 700515d201053-caas-dev
+  name: order-processing-service-67d46c8c99-cm84s
+  namespace: enterprise-ops-dev
   labels:
-    app: customer-account-alias-service
-    appIdentity: caas
+    app: order-processing-service
+    appIdentity: ops
     pod-template-hash: 67d46c8c99
   ownerReferences:
   - apiVersion: apps/v1
     controller: true
     kind: ReplicaSet
-    name: customer-account-alias-service-67d46c8c99
+    name: order-processing-service-67d46c8c99
 ```
 
 What's going on:
 - The pod name has a random suffix (`67d46c8c99-cm84s`). That's because **you didn't create this pod directly** — a Deployment created a ReplicaSet, which created the pod. The random suffix prevents naming collisions when scaling.
 - `ownerReferences` confirms this: the pod was created by a ReplicaSet. When the ReplicaSet is deleted, this pod is too (cascade delete).
 - `pod-template-hash` is a label the Deployment uses to track which pods belong to which version of the template.
-- `namespace` is the JPMC tenant/project namespace — your team's slice of the cluster.
+- `namespace` is the tenant/project namespace — the team's slice of the cluster.
 
 ### initContainers — runs first, blocks app start
 
 ```yaml
 initContainers:
 - name: bootstrap-identity-sidecar-init
-  image: containers-read.gkp.jpmchase.net/.../bootstrap-identity-sidecar:...
+  image: registry.internal/.../bootstrap-identity-sidecar:...
   ...
 - name: ic
-  image: containers-read.gkp.jpmchase.net/.../ckms-manager:release-2.4...
+  image: registry.internal/.../key-manager:release-2.4...
   ...
 ```
 
@@ -285,7 +285,7 @@ Init containers run sequentially **before** any of the regular containers start.
 
 In your pod, the init containers are:
 1. **bootstrap-identity-sidecar-init** — sets up identity/auth credentials before the app starts. Probably writes a token or config file the app needs.
-2. **ic** — looks like CKMS (cryptographic key management) bootstrap. Sets up encryption keys.
+2. **ic** — looks like a key-management bootstrap. Sets up encryption keys.
 
 Both finish, drop their files into a shared volume, and exit. Then the main containers start with those credentials already in place.
 
@@ -293,11 +293,11 @@ Both finish, drop their files into a shared volume, and exit. Then the main cont
 
 Most apps have one main container. Yours has three — this is sidecar pattern in action:
 
-1. **`customer-account-alias-service`** — the actual Java app (port 8080)
+1. **`order-processing-service`** — the actual Java app (port 8080)
 2. **`logging-sidecar`** — runs `fluent-bit`, ships logs from the app's `/app/logs` to Splunk
-3. **`caas-otel-collector`** — runs OpenTelemetry, collects metrics/traces from the app
+3. **`ops-otel-collector`** — runs OpenTelemetry, collects metrics/traces from the app
 
-The three containers share `/app/logs` via a `caas-logs` volume. The main app writes logs there; the sidecar reads from there and ships them. Classic sidecar pattern, exactly the multi-container use case the previous chapter mentioned.
+The three containers share `/app/logs` via a `ops-logs` volume. The main app writes logs there; the sidecar reads from there and ships them. Classic sidecar pattern, exactly the multi-container use case the previous chapter mentioned.
 
 ### env: where do environment variables come from?
 
@@ -312,7 +312,7 @@ env:
   valueFrom:
     secretKeyRef:                                  # 2. pulled from a Secret
       key: keystore-password
-      name: caas-tls
+      name: ops-tls
 
 - name: INFO_KUBE_NAMESPACE
   valueFrom:
@@ -332,7 +332,7 @@ Your pod also has:
 ```yaml
 envFrom:
 - configMapRef:
-    name: app-runtime-customer-account-alias-service-gt8742hhm7
+    name: app-runtime-order-processing-service-gt8742hhm7
 ```
 
 This says: "take every key in that ConfigMap and inject it as an environment variable." Saves writing 30 lines of `name: x, value: y` when your app needs lots of config.
@@ -414,7 +414,7 @@ securityContext:
     type: RuntimeDefault
 ```
 
-Defines who runs the process and what they can do. JPMC has locked this down well:
+Defines who runs the process and what they can do. This pod has it locked down well:
 - **runAsNonRoot: true** — refuse to start if the image tries to run as root
 - **runAsUser/runAsGroup: 999** — explicitly run as user 999 (a non-root user the image must support)
 - **capabilities.drop: ALL** — strip every Linux capability (no `CAP_NET_ADMIN`, etc.)
@@ -432,11 +432,11 @@ This trips up almost everyone the first time. Two halves:
 ```yaml
 spec:
   volumes:
-  - name: caas-logs
+  - name: ops-logs
     emptyDir: {}                # temp dir, lives as long as the pod
-  - name: caas-tls
+  - name: ops-tls
     secret:
-      secretName: caas-tls      # mount a secret as files
+      secretName: ops-tls      # mount a secret as files
   - name: kcc
     configMap:
       name: kcc-config          # mount a configmap as files
@@ -446,10 +446,10 @@ spec:
 
 ```yaml
 containers:
-- name: customer-account-alias-service
+- name: order-processing-service
   volumeMounts:
   - mountPath: /app/logs
-    name: caas-logs                  # ← matches spec.volumes name
+    name: ops-logs                  # ← matches spec.volumes name
   - mountPath: /etc/tls
     name: tls-stores
     readOnly: true
@@ -744,4 +744,4 @@ k edit deployment <name>
 
 ## Notes for next chapters
 
-Up next: ReplicaSets and Deployments. The pod you saw at JPMC was created by a ReplicaSet (look at the `ownerReferences`) which was created by a Deployment. Once we cover those, the full picture of "how does my app actually get running and stay running" snaps into focus.
+Up next: ReplicaSets and Deployments. The production pod above was created by a ReplicaSet (look at the `ownerReferences`) which was created by a Deployment. Once we cover those, the full picture of "how does my app actually get running and stay running" snaps into focus.
