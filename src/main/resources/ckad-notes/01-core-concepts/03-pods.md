@@ -34,7 +34,7 @@ docker run helper --link app4
 
 You now own a bookkeeping problem:
 
-![Pre-pods problem](diagrams/10-pre-pods-problem.png)
+![Pre-pods problem](./diagrams/10-pre-pods-problem.png)
 
 Specifically, **you** have to:
 - Track which helper belongs to which app instance (a mapping table you maintain).
@@ -50,7 +50,7 @@ This is fine at small scale and miserable at any real scale. **Pods solve exactl
 
 A **pod** is the smallest deployable unit in Kubernetes. It's a Kubernetes object that wraps one or more containers and treats them as a single unit.
 
-![Pods solution](diagrams/11-pods-solution.png)
+![Pods solution](./diagrams/11-pods-solution.png)
 
 Key guarantees that come for free when containers share a pod:
 
@@ -67,7 +67,7 @@ You stop tracking app-helper pairs manually because the pod *is* the pairing.
 
 Containers in the same pod share two important things by default:
 
-![Pod internals](diagrams/12-pod-internals.png)
+![Pod internals](./diagrams/12-pod-internals.png)
 
 ### Shared network namespace
 - All containers in the pod share the same IP address and port space.
@@ -101,7 +101,7 @@ Multi-container pods are a **rare** pattern, used when two processes are so tigh
 
 You don't scale a pod by adding containers to it. You scale by adding *more pods*.
 
-![Pods on nodes](diagrams/13-pods-on-nodes.png)
+![Pods on nodes](./diagrams/13-pods-on-nodes.png)
 
 Two key rules:
 

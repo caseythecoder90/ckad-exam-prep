@@ -4,10 +4,37 @@
 
 CKAD (Certified Kubernetes Application Developer) study notes and lab setup.
 
-- Notes live in `src/main/resources/ckad-notes/`, numbered by chapter (`00-...`, `01-...`).
-- Diagrams referenced from notes live in `src/main/resources/ckad-notes/diagrams/`, numbered.
+- Notes live in `src/main/resources/ckad-notes/`, grouped into **per-section folders** named `NN-<section-slug>/` (e.g. `01-core-concepts/`, `02-configuration/`). Each section folder contains its own numbered chapter notes (`00-...`, `01-...`).
+- Each section folder has its own `diagrams/` subfolder alongside the notes. Diagrams live with the section that references them — **not** in a single global folder.
 - `src/main/resources/ckad-notes/commands.md` is the **global single-file command reference** (Ctrl+F across everything).
 - `src/main/resources/ckad-notes/commands/` holds **per-topic focused command files** for quick navigation while studying one resource at a time.
+
+### Notes file layout (the schema)
+
+```
+src/main/resources/ckad-notes/
+├── 01-core-concepts/
+│   ├── 00-local-lab-setup.md
+│   ├── 01-architecture.md
+│   ├── ...
+│   └── diagrams/
+│       ├── 01-cluster-overview.png
+│       └── ...
+├── 02-configuration/
+│   ├── 01-container-images-docker.md
+│   ├── 02-commands-and-arguments.md
+│   └── diagrams/
+│       ├── 01-dockerfile-anatomy.png
+│       └── ...
+├── commands/
+└── commands.md
+```
+
+**Rules for new notes (apply this when generating chapters):**
+- A new chapter goes in its section folder (`NN-<section>/CC-<chapter-slug>.md`). **Chapter numbers reset at each section** — every section's notes start at `01-...` (or `00-...` for an intro/setup file). Do *not* continue the numbering from the previous section.
+- Diagrams referenced by a chapter go in that same section's `diagrams/` subfolder. Diagram numbers also reset per section — `02-configuration/diagrams/` starts at `01-...` independently of `01-core-concepts/diagrams/`.
+- Image references in markdown use **relative paths from the notes file**: `![Caption](./diagrams/NN-name.png)`. Never use `../diagrams/...` and never hard-code `src/main/resources/...` paths — those break when the file moves.
+- One topic per file. Don't bundle multiple course chapters into one markdown file.
 
 ---
 
@@ -77,6 +104,6 @@ If a notes chapter introduces a new resource type that has no focused command fi
 
 - No emojis in notes or commit messages unless the user explicitly asks for them.
 - Concise, exam-focused phrasing. No marketing fluff, no padding.
-- Diagrams referenced by their numbered filename prefix from `diagrams/`.
+- Diagrams referenced by their numbered filename prefix from the **section's own** `diagrams/` subfolder, via `./diagrams/<NN-name>.png`.
 - Prefer editing existing files over creating new ones; keep new files focused (one topic per file).
 - When updating notes, also update `commands.md` and the matching `commands/<topic>.md` in the same PR so the references never drift.

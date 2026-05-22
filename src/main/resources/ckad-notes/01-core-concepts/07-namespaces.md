@@ -8,7 +8,7 @@
 
 A namespace is to a Kubernetes cluster what a household is to a neighborhood. Inside one household, you can refer to "Mark" and everyone knows who you mean. In a different household, "Mark" might refer to someone entirely different — and there's no conflict, because the names are scoped to each house.
 
-![Houses analogy](diagrams/27-namespaces-houses.png)
+![Houses analogy](./diagrams/27-namespaces-houses.png)
 
 This is what namespaces do for Kubernetes resources:
 
@@ -20,7 +20,7 @@ Each namespace also has:
 - Its own policies (RBAC, network policies, resource quotas).
 - Its own limits (more on this in section 7).
 
-This is critical at scale. JPMC's CaaS cluster runs apps from dozens of teams. The customer-account-alias-service pod you uploaded back in chapter 4 lived in `namespace: 700515d201053-caas-dev` — that's the namespace JPMC carved out for your team's dev environment. Other teams have their own namespaces. The cluster is shared; the namespaces aren't.
+This is critical at scale. A shared enterprise cluster runs apps from dozens of teams. The order-processing-service pod from chapter 4 lived in `namespace: enterprise-ops-dev` — that's the namespace the platform team carved out for that team's dev environment. Other teams have their own namespaces. The cluster is shared; the namespaces aren't.
 
 ---
 
@@ -28,7 +28,7 @@ This is critical at scale. JPMC's CaaS cluster runs apps from dozens of teams. T
 
 When a Kubernetes cluster is created, four namespaces exist automatically:
 
-![Namespace types](diagrams/28-namespace-types.png)
+![Namespace types](./diagrams/28-namespace-types.png)
 
 | Namespace | Purpose | Don't touch unless |
 |---|---|---|
@@ -41,7 +41,7 @@ A few real-world habits to internalize:
 
 - **Don't deploy your apps to `default`** in production. It works, but production apps should always live in their own named namespaces. The `default` namespace is for quick demos and labs.
 - **Don't deploy your apps to `kube-system`** ever. That's reserved for cluster components. Mixing your stuff in there is asking for trouble.
-- **Your real namespaces** should describe purpose: `dev`, `staging`, `prod`, `team-payments-dev`, `caas-prod`, etc.
+- **Your real namespaces** should describe purpose: `dev`, `staging`, `prod`, `team-payments-dev`, `ops-prod`, etc.
 
 ---
 
@@ -102,7 +102,7 @@ This is what your instructor breezed through. Worth slowing down because it's te
 
 When you create a Service in Kubernetes, an internal DNS entry is auto-created so other pods can find it by name (no IP needed, even though service IPs change when services are recreated). The DNS server is **CoreDNS**, which runs in the `kube-system` namespace.
 
-![DNS naming](diagrams/29-dns-naming.png)
+![DNS naming](./diagrams/29-dns-naming.png)
 
 ### Inside the same namespace — use the short name
 
@@ -185,7 +185,7 @@ For the exam, the imperative form is fine — no special configuration usually n
 
 Constantly typing `-n dev` or `-n prod` gets tedious. Set the namespace once in your kubectl context, then forget about it.
 
-![Switching contexts](diagrams/27-namespaces-houses.png)
+![Switching contexts](./diagrams/27-namespaces-houses.png)
 
 ### See your current context
 
@@ -228,7 +228,7 @@ kubens dev            # switch to dev
 kubens -              # switch back to previous
 ```
 
-You can't install third-party tools on the exam, but for daily work it's worth having on your local lab and JPMC bastion. Install once, save the rest of your career.
+You can't install third-party tools on the exam, but for daily work it's worth having on your local lab and corporate bastion hosts. Install once, save the rest of your career.
 
 ---
 
@@ -236,11 +236,11 @@ You can't install third-party tools on the exam, but for daily work it's worth h
 
 The instructor's last slide. ResourceQuota lets a cluster admin (or you, in your own lab) cap how much of the cluster a namespace can consume.
 
-![Resource quotas](diagrams/30-resource-quotas.png)
+![Resource quotas](./diagrams/30-resource-quotas.png)
 
 ### Why this exists
 
-Without quotas, one namespace could theoretically eat the whole cluster — schedule thousands of pods, request hundreds of CPUs. In a shared cluster like JPMC's CaaS, that would impact everyone else. Quotas prevent this by saying "this namespace can use AT MOST X."
+Without quotas, one namespace could theoretically eat the whole cluster — schedule thousands of pods, request hundreds of CPUs. In a shared enterprise cluster, that would impact everyone else. Quotas prevent this by saying "this namespace can use AT MOST X."
 
 ### ResourceQuota example
 
@@ -306,28 +306,28 @@ spec:
     type: Container
 ```
 
-This is what JPMC uses to enforce "no container in this namespace can be unbounded." If you don't set CPU/memory on your container, the LimitRange supplies defaults so you can't accidentally let a container consume infinite resources.
+This is what enterprises use to enforce "no container in this namespace can be unbounded." If you don't set CPU/memory on your container, the LimitRange supplies defaults so you can't accidentally let a container consume infinite resources.
 
-You saw evidence of this in the JPMC pod from chapter 4 — the annotation:
+You saw evidence of this in the production pod from chapter 4 — the annotation:
 ```yaml
 annotations:
   kubernetes.io/limit-ranger: 'LimitRanger plugin set: ephemeral-storage request
-    for container customer-account-alias-service; ephemeral-storage limit for container...'
+    for container order-processing-service; ephemeral-storage limit for container...'
 ```
 
-That tells you a LimitRange was active in the namespace and supplied defaults for fields your team's manifest didn't specify.
+That tells you a LimitRange was active in the namespace and supplied defaults for fields the team's manifest didn't specify.
 
 ---
 
-## 8. Mapping back to Visa and JPMC
+## 8. Mapping back to real production
 
 Some things from this chapter that should click into place:
 
 **Logging into namespaces at Visa.** When you logged into a cluster and ran `kubectl get pods -n <team-namespace>`, you weren't doing anything magical — you were just scoping to your team's slice of the cluster. The kubectl command itself is cluster-wide; the namespace is the filter.
 
-**Naming conventions.** Your JPMC pod was in `700515d201053-caas-dev`. That's a namespace name that encodes:
-- `700515d201053` — likely a Line-of-Business (LOB) identifier at JPMC
-- `caas` — your team or platform
+**Naming conventions.** The production pod was in something like `enterprise-ops-dev`. That's a namespace name that encodes:
+- `enterprise` — likely a Line-of-Business (LOB) identifier
+- `ops` — the team or platform
 - `dev` — the environment
 
 This is standard enterprise practice. Namespaces are how the cluster knows which team/environment a workload belongs to, which makes RBAC, quotas, network policies, monitoring, and cost attribution all possible at the namespace level.

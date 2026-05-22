@@ -10,7 +10,7 @@ The instructor sets this up with a classic three-tier app: front-end pods talk t
 
 The naive approach — frontend pods hardcoding backend pod IPs — falls apart immediately:
 
-![Chaos without services](diagrams/36-clusterip-problem.png)
+![Chaos without services](./diagrams/36-clusterip-problem.png)
 
 What goes wrong:
 
@@ -27,7 +27,7 @@ This is the real-world pain you experienced at Visa with IP whitelisting. Teams 
 
 A **ClusterIP Service** sits in front of each tier. It groups the pods of that tier together and gives them a single stable identity that other pods can use.
 
-![ClusterIP solution](diagrams/37-clusterip-solution.png)
+![ClusterIP solution](./diagrams/37-clusterip-solution.png)
 
 What changes:
 
@@ -139,16 +139,16 @@ This is why ClusterIP services are so powerful for microservices: your app code 
 
 ---
 
-## 6. The JPMC customer-account-alias-service revisited
+## 6. The order-processing-service revisited
 
-Now you can read your JPMC Service manifest with full understanding. It almost certainly looks something like this (names changed):
+Now you can read the production Service manifest with full understanding. It almost certainly looks something like this:
 
 ```yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: customer-account-alias-service
-  namespace: 700515d201053-caas-dev
+  name: order-processing-service
+  namespace: enterprise-ops-dev
 spec:
   type: ClusterIP
   ports:
@@ -156,26 +156,26 @@ spec:
       targetPort: 8080
       protocol: TCP
   selector:
-    app: customer-account-alias-service
+    app: order-processing-service
 ```
 
 What's happening:
 
-- **type: ClusterIP** — internal only. External traffic to JPMC banking services doesn't come through NodePort; it goes through corporate load balancers, ingress controllers, and API gateways before reaching the cluster.
+- **type: ClusterIP** — internal only. External traffic to enterprise services doesn't come through NodePort; it goes through corporate load balancers, ingress controllers, and API gateways before reaching the cluster.
 - **port 8080** — the service exposes port 8080. Internal callers use this.
-- **targetPort 8080** — matches the pod's container port (from the JPMC pod YAML in chapter 4: `containerPort: 8080`).
-- **selector** — matches the pod's `app: customer-account-alias-service` label.
+- **targetPort 8080** — matches the pod's container port (from the production pod YAML in chapter 4: `containerPort: 8080`).
+- **selector** — matches the pod's `app: order-processing-service` label.
 
-When another microservice in JPMC's CaaS environment needs to talk to your team's service, it uses:
+When another microservice in the same environment needs to talk to this service, it uses:
 
 ```
-customer-account-alias-service.700515d201053-caas-dev.svc.cluster.local:8080
+order-processing-service.enterprise-ops-dev.svc.cluster.local:8080
 ```
 
 Or, if it's in the same namespace, just:
 
 ```
-customer-account-alias-service:8080
+order-processing-service:8080
 ```
 
 Same pattern. Same mechanism. Just at production scale with a more elaborate namespace name.
@@ -184,7 +184,7 @@ Same pattern. Same mechanism. Just at production scale with a more elaborate nam
 
 ## 7. ClusterIP vs NodePort — recap
 
-![ClusterIP vs NodePort](diagrams/38-clusterip-vs-nodeport.png)
+![ClusterIP vs NodePort](./diagrams/38-clusterip-vs-nodeport.png)
 
 | | ClusterIP | NodePort |
 |---|---|---|

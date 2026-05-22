@@ -23,7 +23,7 @@ Services also **enable loose coupling**. Your web app doesn't need to know the I
 
 ## 2. The three Service types
 
-![Service types](diagrams/31-service-types.png)
+![Service types](./diagrams/31-service-types.png)
 
 | Type | Reachable from | Use case |
 |---|---|---|
@@ -39,7 +39,7 @@ The instructor mentioned all three; this chapter is **NodePort**. The next chapt
 
 This is the part that confused you, and confuses almost everyone. The naming convention is "from the Service's perspective" — once you internalize that, the names make sense.
 
-![Three ports](diagrams/32-nodeport-three-ports.png)
+![Three ports](./diagrams/32-nodeport-three-ports.png)
 
 | Port name | What it refers to | Required? |
 |---|---|---|
@@ -142,7 +142,7 @@ The Service doesn't list pod names directly. It uses **labels** as a filter — 
 
 The rule: **every key/value under the pod's `labels:` must appear under the service's `selector:`**.
 
-![Labels to selector](diagrams/33-labels-to-selector.png)
+![Labels to selector](./diagrams/33-labels-to-selector.png)
 
 ### Step-by-step workflow
 
@@ -189,42 +189,42 @@ kubectl get endpoints myapp-service
 
 ---
 
-## 6. The JPMC customer-account-alias-service
+## 6. The order-processing-service revisited
 
-The Service definition at your work follows this exact pattern. It looks something like this (names changed):
+A real production Service definition follows this exact pattern. It looks something like this:
 
 ```yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: customer-account-alias-service
+  name: order-processing-service
   labels:
-    app: customer-account-alias-service
-    appIdentity: caas
+    app: order-processing-service
+    appIdentity: ops
 spec:
-  type: ClusterIP                    # internal only (probably — that's typical at JPMC)
+  type: ClusterIP                    # internal only (typical for enterprise services)
   ports:
     - port: 8080
       targetPort: 8080
       protocol: TCP
   selector:
-    app: customer-account-alias-service
+    app: order-processing-service
 ```
 
 A few things to note about real production Service manifests:
 
-- **Type is ClusterIP**, not NodePort. JPMC's CaaS environment uses internal services and routes external traffic through ingress controllers and corporate load balancers — NodePorts aren't appropriate for production banking infrastructure.
-- **The selector matches one of the labels on the pod template** — specifically `app: customer-account-alias-service`. The pod has other labels too (`appIdentity: caas`, `enableIdentityHelper: "true"`, etc.) but the selector only needs to match the ones it cares about.
+- **Type is ClusterIP**, not NodePort. Enterprise environments use internal services and route external traffic through ingress controllers and corporate load balancers — NodePorts aren't appropriate for production infrastructure.
+- **The selector matches one of the labels on the pod template** — specifically `app: order-processing-service`. The pod has other labels too (`appIdentity: ops`, `enableIdentityHelper: "true"`, etc.), but the selector only needs to match the ones it cares about.
 - **Single port** — most apps expose just one port. Multi-port services exist (e.g., for an app that serves HTTP and HTTPS) but are less common.
 
 The chain to remember:
 
-1. Your team's **Deployment** manifest has a pod template with `labels: { app: customer-account-alias-service }`
+1. Your team's **Deployment** manifest has a pod template with `labels: { app: order-processing-service }`
 2. The Deployment creates **ReplicaSets** which create **Pods** with those labels
-3. The **Service** manifest has `selector: { app: customer-account-alias-service }`
+3. The **Service** manifest has `selector: { app: order-processing-service }`
 4. Other pods in the namespace (or external traffic, depending on type) reach the pods through the Service
 
-This is the network half of what makes the JPMC pod from chapter 4 actually serve traffic.
+This is the network half of what makes the production pod from chapter 4 actually serve traffic.
 
 ---
 
@@ -232,7 +232,7 @@ This is the network half of what makes the JPMC pod from chapter 4 actually serv
 
 The instructor's example mapped a Service to one pod. In production you always have multiple pods for reliability. The good news: **you don't change anything in the Service definition.**
 
-![Multi-pod NodePort](diagrams/34-nodeport-multi-pod.png)
+![Multi-pod NodePort](./diagrams/34-nodeport-multi-pod.png)
 
 What happens:
 
@@ -258,7 +258,7 @@ Three endpoints — the Service is load-balancing across three pods.
 
 This is the part you got excited about, and rightly so. It's one of the elegant things about Kubernetes networking.
 
-![NodePort cluster-wide](diagrams/35-nodeport-cluster-spanning.png)
+![NodePort cluster-wide](./diagrams/35-nodeport-cluster-spanning.png)
 
 ### What happens
 

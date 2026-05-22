@@ -1,6 +1,6 @@
 # 06 — Deployments
 
-> Deployments are the workload object you'll write most often in real life. They wrap a ReplicaSet (which wraps pods) and add the things you actually need in production: rolling updates, rollbacks, history, pause/resume. The customer-account-alias-service pod at JPMC was created by a Deployment — chapter 4's `ownerReferences` chain ends here.
+> Deployments are the workload object you'll write most often in real life. They wrap a ReplicaSet (which wraps pods) and add the things you actually need in production: rolling updates, rollbacks, history, pause/resume. The order-processing-service pod from chapter 4 was created by a Deployment — that `ownerReferences` chain ends here.
 
 ---
 
@@ -17,7 +17,7 @@ When you deploy a real application to a Kubernetes cluster, you need more than j
 
 A bare ReplicaSet can only handle "deploy" and "scale." The other four are what a Deployment adds.
 
-![Deployment capabilities](diagrams/25-deployment-capabilities.png)
+![Deployment capabilities](./diagrams/25-deployment-capabilities.png)
 
 ---
 
@@ -25,26 +25,26 @@ A bare ReplicaSet can only handle "deploy" and "scale." The other four are what 
 
 Here's the most important mental model in this chapter. When you create a Deployment, Kubernetes doesn't create pods directly. It creates a ReplicaSet, and the ReplicaSet creates the pods.
 
-![Deployment stack](diagrams/24-deployment-stack.png)
+![Deployment stack](./diagrams/24-deployment-stack.png)
 
 You write the Deployment. The Deployment controller creates a ReplicaSet. The ReplicaSet controller creates the pods.
 
-This is exactly the chain from chapter 4. Remember the JPMC pod's `ownerReferences`?
+This is exactly the chain from chapter 4. Remember the production pod's `ownerReferences`?
 
 ```yaml
 ownerReferences:
 - apiVersion: apps/v1
   controller: true
   kind: ReplicaSet
-  name: customer-account-alias-service-67d46c8c99
+  name: order-processing-service-67d46c8c99
 ```
 
-The pod is owned by a ReplicaSet. That ReplicaSet is owned by a Deployment named `customer-account-alias-service` (the random suffix `67d46c8c99` is the deployment's pod-template-hash — it identifies *which version* of the deployment created this ReplicaSet). When you upgrade the Deployment, a new ReplicaSet with a different hash gets created.
+The pod is owned by a ReplicaSet. That ReplicaSet is owned by a Deployment named `order-processing-service` (the random suffix `67d46c8c99` is the deployment's pod-template-hash — it identifies *which version* of the deployment created this ReplicaSet). When you upgrade the Deployment, a new ReplicaSet with a different hash gets created.
 
 **Pod names follow the same pattern:**
 ```
 <deployment-name>-<replicaset-hash>-<pod-suffix>
-customer-account-alias-service-67d46c8c99-cm84s
+order-processing-service-67d46c8c99-cm84s
 └── deployment ──┘ └── ReplicaSet ──┘ └─pod─┘
 ```
 
@@ -136,7 +136,7 @@ You won't always set these — the defaults are usually fine — but knowing the
 
 The default upgrade strategy is `RollingUpdate`. Here's what happens when you change the image in a Deployment and apply:
 
-![Rolling update](diagrams/26-rolling-update.png)
+![Rolling update](./diagrams/26-rolling-update.png)
 
 1. **Deployment notices the template changed** (different image, env, etc.).
 2. **Creates a new ReplicaSet** with the new template. Initial replicas: 0.
@@ -381,7 +381,7 @@ kubectl get all -l app=myapp             # filter by label — show only myapp's
 kubectl get all -o wide                  # extra columns (node, IP, etc.)
 ```
 
-The `-l` form is especially handy in a busy namespace where many apps coexist (like JPMC's CaaS namespaces). `kubectl get all -l app=customer-account-alias-service` would scope the output to just your team's resources.
+The `-l` form is especially handy in a busy namespace where many apps coexist (like multi-team production namespaces). `kubectl get all -l app=order-processing-service` would scope the output to just your team's resources.
 
 ---
 
@@ -396,33 +396,33 @@ This is a clean shutdown — Deployment, ReplicaSet, and pods all go away. No or
 
 ---
 
-## 12. Mapping back to your JPMC pod
+## 12. Mapping back to the production pod
 
-Now you can fully read the JPMC pod's `ownerReferences` from chapter 4:
+Now you can fully read the production pod's `ownerReferences` from chapter 4:
 
 ```yaml
 metadata:
-  name: customer-account-alias-service-67d46c8c99-cm84s
+  name: order-processing-service-67d46c8c99-cm84s
   ownerReferences:
   - apiVersion: apps/v1
     controller: true
     kind: ReplicaSet
-    name: customer-account-alias-service-67d46c8c99
+    name: order-processing-service-67d46c8c99
 ```
 
 Reading the chain:
-1. **Pod** `customer-account-alias-service-67d46c8c99-cm84s` belongs to...
-2. **ReplicaSet** `customer-account-alias-service-67d46c8c99` (hash `67d46c8c99`), which was created by...
-3. **Deployment** `customer-account-alias-service` (a single Deployment can have multiple ReplicaSets over its lifetime, one per revision)
+1. **Pod** `order-processing-service-67d46c8c99-cm84s` belongs to...
+2. **ReplicaSet** `order-processing-service-67d46c8c99` (hash `67d46c8c99`), which was created by...
+3. **Deployment** `order-processing-service` (a single Deployment can have multiple ReplicaSets over its lifetime, one per revision)
 
-If you ran `kubectl describe deployment customer-account-alias-service` at JPMC, you'd see:
-- The replica count your team set (probably 3 or 4 in your dev namespace)
+If you ran `kubectl describe deployment order-processing-service` in that environment, you'd see:
+- The replica count the team set (probably 3 or 4 in a dev namespace)
 - The strategy (almost certainly `RollingUpdate`)
-- The current image (the `containerregistry-na.jpmchase.net/...` reference)
+- The current image (a `registry.internal/...` reference)
 - Recent rollout events
 - Resource limits, probes, all the rest from the pod template
 
-Every deployment in JPMC's CaaS environment follows this exact pattern. The pod manifest you uploaded is generated by Kubernetes; the Deployment manifest is what your team actually writes.
+Every deployment in a production environment like this follows this exact pattern. The pod manifest is generated by Kubernetes; the Deployment manifest is what the team actually writes.
 
 ---
 

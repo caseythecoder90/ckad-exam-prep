@@ -26,7 +26,7 @@ This is the story most candidates get tripped up on. It happens in four phases.
 
 In the earliest versions of Kubernetes, Docker was the only supported runtime. The kubelet had Docker API calls baked directly into its source code.
 
-![Pre-CRI era](diagrams/05-pre-cri-era.png)
+![Pre-CRI era](./diagrams/05-pre-cri-era.png)
 
 This was fine until other runtimes (rkt, then more) wanted in. Cramming each new runtime into the kubelet codebase wasn't sustainable.
 
@@ -34,7 +34,7 @@ This was fine until other runtimes (rkt, then more) wanted in. Cramming each new
 
 The **Open Container Initiative (OCI)** was created to standardize containers across the industry, so a container built with one tool could run on another tool's runtime.
 
-![OCI standards](diagrams/06-oci-standards.png)
+![OCI standards](./diagrams/06-oci-standards.png)
 
 OCI maintains two key specifications:
 
@@ -51,7 +51,7 @@ Kubernetes created the **Container Runtime Interface (CRI)** — a standard plug
 
 The catch: Docker existed before CRI and never spoke CRI. Rather than break Docker support, the Kubernetes team built **dockershim** — a small adapter inside the kubelet that translated CRI calls into Docker API calls.
 
-![Dockershim era](diagrams/07-dockershim-era.png)
+![Dockershim era](./diagrams/07-dockershim-era.png)
 
 This worked for years (Kubernetes 1.5 through 1.23), but maintaining dockershim was extra work for the Kubernetes team. Other runtimes (containerd, CRI-O) supported CRI natively, so dockershim was the odd one out.
 
@@ -59,7 +59,7 @@ This worked for years (Kubernetes 1.5 through 1.23), but maintaining dockershim 
 
 In **Kubernetes v1.24** (released April 2022), dockershim was removed from the Kubernetes codebase. The kubelet now talks CRI directly to whichever CRI-compliant runtime is installed.
 
-![Current state](diagrams/08-current-state.png)
+![Current state](./diagrams/08-current-state.png)
 
 Most clusters today run **containerd**. OpenShift and some other distributions run **CRI-O**.
 
@@ -89,7 +89,7 @@ That's why containerd is what Kubernetes uses today — it's exactly the runtime
 
 Three different command-line tools end up in conversations about containerd. They look similar but have different audiences.
 
-![CLI tools](diagrams/09-cli-tools.png)
+![CLI tools](./diagrams/09-cli-tools.png)
 
 ### `ctr`
 - Ships with containerd itself.
