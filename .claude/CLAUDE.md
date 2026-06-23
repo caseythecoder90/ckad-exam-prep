@@ -34,6 +34,7 @@ src/main/resources/ckad-notes/
 - A new chapter goes in its section folder (`NN-<section>/CC-<chapter-slug>.md`). **Chapter numbers reset at each section** — every section's notes start at `01-...` (or `00-...` for an intro/setup file). Do *not* continue the numbering from the previous section.
 - Diagrams referenced by a chapter go in that same section's `diagrams/` subfolder. Diagram numbers also reset per section — `02-configuration/diagrams/` starts at `01-...` independently of `01-core-concepts/diagrams/`.
 - Image references in markdown use **relative paths from the notes file**: `![Caption](./diagrams/NN-name.png)`. Never use `../diagrams/...` and never hard-code `src/main/resources/...` paths — those break when the file moves.
+- **Diagrams must be embedded in the body to render.** A `companion_diagrams:` list in YAML frontmatter is metadata only and does **not** display the image. Every diagram a chapter references must appear in the body as `![Caption](./diagrams/NN-name.png)`, placed in the relevant section. Frontmatter listings are optional and never a substitute for the body embed.
 - One topic per file. Don't bundle multiple course chapters into one markdown file.
 
 ---
