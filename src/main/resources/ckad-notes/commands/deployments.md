@@ -55,6 +55,12 @@ k rollout pause deployment/web                   # pause rollout mid-update
 k rollout resume deployment/web                  # resume
 ```
 
+Record why a revision changed (shows in `rollout history` CHANGE-CAUSE; `--record` is deprecated):
+
+```bash
+k annotate deployment/web kubernetes.io/change-cause="update nginx to 1.25"
+```
+
 ## Delete
 
 Removes the Deployment, its ReplicaSets, and the Pods underneath.
@@ -69,3 +75,4 @@ k delete -f deploy.yaml
 - `imperative.md` — full imperative flag list
 - `services.md` — `k expose deployment` to put a Service in front of it
 - `pods.md` — inspecting the pods a Deployment owns
+- `deployment-strategies.md` — blue/green & canary rollouts
