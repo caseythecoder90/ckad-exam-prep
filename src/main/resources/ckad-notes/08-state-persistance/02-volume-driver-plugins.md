@@ -1,28 +1,25 @@
 #  Volume Driver Plugins (and what storage drivers actually do)
 
-> **Section:** 07-storage
-> **Course chapter:** 2 (Volume Driver Plugins)
-> **Why this is in CKAD — scope note:** Still **background, not directly examinable.** You won't be asked about overlay2, rexray, or `--volume-driver` on the exam. But the volume-driver-plugin idea is the direct ancestor of the **CSI / StorageClass provisioner** model that *is* examinable, and you asked for the deeper "what storage drivers actually do" context — so this chapter goes a level below the slides on purpose. Learn the mental model; the Docker specifics are just the vehicle.
-> **Companion files:** `01-docker-storage.md` (introduced the two driver types and the comparison table — this chapter is the deep dive). Forward link to the upcoming PV/PVC/StorageClass chapters.
+Still **background, not directly examinable.** You won't be asked about overlay2, rexray, or `--volume-driver` on the exam. But the volume-driver-plugin idea is the direct ancestor of the **CSI / StorageClass provisioner** model that *is* examinable, so this chapter goes a level deeper on the mechanism. Learn the mental model; the Docker specifics are just the vehicle. Read `01-docker-storage.md` first (it introduced the two driver types).
 
 ---
 
-## 1. The two driver types again (the slide)
+## 1. The two driver types
 
 Docker's storage splits into **storage drivers** and **volume drivers**:
 
 - **Storage drivers** — AUFS, ZFS, BTRFS, Device Mapper, Overlay/overlay2. They implement the **layered image + container filesystem** and copy-on-write.
 - **Volume drivers** — Local (default), plus plugins: Azure File Storage, Convoy, DigitalOcean Block Storage, Flocker, gce-docker, GlusterFS, NetApp, RexRay, Portworx, VMware vSphere Storage. They manage **volumes** — the persistent storage you attach.
 
-`01-docker-storage.md` covered *what* they are. This chapter answers the two things you asked: **what storage drivers actually do** (section 2), and a proper **compare/contrast** (section 4), with the lecture's volume-driver-plugin example in between (section 3).
+`01-docker-storage.md` covered *what* they are. This chapter covers **what storage drivers actually do** (section 2), a proper **compare/contrast** (section 4), with the volume-driver-plugin example in between (section 3).
 
 ---
 
-## 2. What a storage driver actually does (the part you forgot)
+## 2. What a storage driver actually does
 
 ### The general OS picture first
 
-In any operating system, programs don't talk to disks directly. They call standard filesystem operations — `open`, `read`, `write`, `stat` — against the kernel's **Virtual File System (VFS)** layer. Below VFS sit **filesystem drivers** (ext4, xfs, NTFS, tmpfs, OverlayFS…), each translating those uniform operations into reads/writes on *some* backing representation: a disk partition, RAM, a network share, or — for a **union filesystem** — other directories. "A storage/filesystem driver" is just the code that maps standard file operations onto a particular storage representation. That's the college/Linux-book concept you're reaching for.
+In any operating system, programs don't talk to disks directly. They call standard filesystem operations — `open`, `read`, `write`, `stat` — against the kernel's **Virtual File System (VFS)** layer. Below VFS sit **filesystem drivers** (ext4, xfs, NTFS, tmpfs, OverlayFS…), each translating those uniform operations into reads/writes on *some* backing representation: a disk partition, RAM, a network share, or — for a **union filesystem** — other directories. "A storage/filesystem driver" is just the code that maps standard file operations onto a particular storage representation.
 
 ### Docker's storage driver = a union filesystem with copy-on-write
 
@@ -59,11 +56,11 @@ So storage drivers cluster into: file-level union (aufs, overlay2), snapshotting
 
 ---
 
-## 3. Volume drivers and plugins (the actual lecture)
+## 3. Volume drivers and plugins
 
 A **volume driver** is a Docker plugin that implements the volume lifecycle — create, mount, unmount, remove — against a particular **storage backend**. The default **`local`** driver just makes a directory under `/var/lib/docker/volumes` on the host. Third-party drivers point volumes at storage that lives **off the host**: cloud block storage (AWS EBS, GCE PD, DigitalOcean, Azure), networked/distributed filesystems (NFS, GlusterFS, NetApp), or software-defined storage (Portworx).
 
-The lecture's example uses **REX-Ray** to put a MySQL volume on **AWS EBS**:
+Example using **REX-Ray** to put a MySQL volume on **AWS EBS**:
 
 ```bash
 docker run -it \
@@ -79,7 +76,7 @@ docker run -it \
 
 ---
 
-## 4. Storage driver vs volume driver — compare and contrast (your ask)
+## 4. Storage driver vs volume driver — compare and contrast
 
 ![Storage driver vs volume driver](./diagrams/05-storage-vs-volume-driver.png)
 
@@ -95,7 +92,7 @@ docker run -it \
 
 The one-sentence contrast: **the storage driver builds the container's throwaway filesystem (the layers + copy-on-write); the volume driver plugs durable storage into it.** One is about *how the container's filesystem works*; the other is about *where your persistent data lives*.
 
-> **Your context:** on your Hetzner VPS you've only ever used the **`local`** volume driver (the default) — your DB/Redis data is on the box's own disk, which is all a single host needs. You'd reach for an external volume driver the moment data had to survive a *host* dying or move between hosts — which is precisely the problem cloud/cluster storage solves, and precisely what the next Kubernetes chapters formalize.
+A single-host setup only ever needs the default **`local`** volume driver — data is on the box's own disk. You'd reach for an external volume driver the moment data had to survive a *host* dying or move between hosts — which is precisely what the next Kubernetes chapters formalize.
 
 ---
 
@@ -126,28 +123,3 @@ docker system df                            # space used by images / containers 
 - **Storage driver = per daemon, ephemeral, union/COW.** **Volume driver = per volume, persistent, a backing-store mount.** Don't conflate them — this is the distinction the exam *does* lean on conceptually when you reason about why pod data needs a PV.
 - **overlay2** is the default on any modern host; you rarely set the storage driver.
 - The Kubernetes equivalent of a **bind mount** is `hostPath`; of a Docker **volume**, an `emptyDir` (ephemeral) or a **PV** (persistent). Keep that map handy for the next chapters.
-
----
-
-## TL;DR / takeaways
-
-- A **storage driver** implements the container's layered root filesystem with a **union fs + copy-on-write**. overlay2 (the default) uses OverlayFS: **lowerdir** (RO image layers) + **upperdir** (RW container layer) + **workdir** → **merged** view. Reads fall through; writes copy-up; deletes use whiteouts.
-- Storage drivers differ by *mechanism*: union (aufs/overlay2), fs snapshots (btrfs/zfs), block snapshots (devicemapper), naive copy (vfs). Docker picks one per daemon.
-- A **volume driver** manages persistent **volumes** against a backend: **local** (default, on-host) or plugins (rexray/EBS, Portworx, NFS…) for off-host/durable storage. Chosen **per volume** via `--volume-driver`.
-- **Contrast:** storage driver = *how the container's throwaway fs works*; volume driver = *where persistent data lives*. Ephemeral vs persistent; per-daemon vs per-volume.
-- In Kubernetes this becomes **CSI + StorageClass provisioners** — the examinable layer that the next chapters cover.
-
----
-
-## Resolved threads
-
-- [x] **"What do storage drivers do in computers?"** — they map standard file operations onto a storage representation; Docker's is a **union filesystem with copy-on-write** (OverlayFS: lower/upper/work/merged). Diagram 04.
-- [x] **Compare/contrast storage vs volume drivers** — table + diagram 05. Storage driver builds the ephemeral layered fs; volume driver plugs in durable storage.
-- [x] **Storage-vs-volume-driver basics** (carried from `01`) — now with the underlying mechanism, not just the labels.
-
-### Open threads
-
-- [ ] On the WSL2 box: `docker info | grep -i storage` (confirm overlay2) and peek at `/var/lib/docker/overlay2/` structure (lowerdir/upperdir link files) to see the union fs for real.
-- [ ] On the Hetzner VPS: `docker volume inspect <name>` to confirm your DB/Redis volumes use the **`local`** driver and see their `Mountpoint`.
-- [ ] **Next lecture:** Kubernetes **Volumes** (`emptyDir`, `hostPath`) — the first examinable storage topic and the direct successor to this Docker model. Next file = `03-...`; next diagram = `06-...`.
-- [ ] After volumes: **PersistentVolume / PersistentVolumeClaim / StorageClass** (where CSI from section 5 becomes concrete) — the core CKAD storage objects; watch the PV↔PVC binding, `accessModes`, and `persistentVolumeReclaimPolicy`.

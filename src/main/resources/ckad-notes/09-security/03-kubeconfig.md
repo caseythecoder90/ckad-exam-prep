@@ -159,56 +159,36 @@ kubectl config view --raw
 
 ---
 
-## Your JPMC kubeconfig — What You're Looking At
+## Enterprise OIDC kubeconfig — What You're Looking At
 
-Looking at your actual file, every section IS present — the file is just long because the tokens are large base64 blobs that push the `users:` section far down the screen.
+An enterprise kubeconfig has every section present — the file is just long because the tokens are large base64 blobs that push the `users:` section far down. Naming conventions often use `<cluster-url>/<user-email>` for both the user name and context name.
 
-**Cluster section:**
-```yaml
-clusters:
-- cluster:
-    server: https://api.mt-d2.na-nw-s02.gkp.jpmchase.net:6443
-  name: api.mt-d2.na-nw-s02.gkp.jpmchase.net
-```
-`api.mt-d2.na-nw-s02.gkp.jpmchase.net` is the DNS name of your JPMC API server. The `mt-d2` / `na-nw-s02` portion suggests it's a managed/internal cluster in a North America region. `gkp.jpmchase.net` is JPMC's internal domain for their Kubernetes platform (Google Kubernetes Platform? or their internal GKP platform).
+A context's `namespace:` field means every kubectl command in that context defaults to that namespace without needing `-n`.
 
-**Context section:**
-```yaml
-contexts:
-- context:
-    cluster: api.mt-d2.na-nw-s02.gkp.jpmchase.net
-    namespace: 700515d201053-caas-management-plane-dev
-    user: api.mt-d2.na-nw-s02.gkp.jpmchase.net/r770392@naeast.ad.jpmorganchase.com
-  name: api.mt-d2.na-nw-s02.gkp.jpmchase.net/r770392@naeast.ad.jpmorganchase.com
-```
-JPMC's naming convention is `<cluster-url>/<user-email>` for both the user name and context name. `r770392` is your network ID. `naeast.ad.jpmorganchase.com` is JPMC's Active Directory domain (naeast = North America East region AD).
-
-The `namespace: 700515d201053-caas-management-plane-dev` means every kubectl command you run in this context defaults to that namespace without needing `-n`. That's why you don't have to type the namespace every time.
-
-**Users section** (below the long token blob):
+**Users section** (below the long token blob) with the legacy OIDC format:
 ```yaml
 users:
-- name: api.mt-d2.na-nw-s02.gkp.jpmchase.net/r770392@naeast.ad.jpmorganchase.com
+- name: <cluster-url>/<user>@<ad-domain>
   user:
     auth-provider:
       config:
-        client-id: PC-103000-SID-234932-PROD       # JPMC's registered OIDC app ID
+        client-id: <registered-OIDC-app-id>
         client-secret: ""
-        id-token: eyJ0eXAi...                       # Your current JWT (huge base64)
-        idp-issuer-url: https://idag2.jpmchase.com/adfs  # JPMC's ADFS (AD Federation Services)
-        refresh-token: xeLlx...                     # Used to get a new id-token when it expires
+        id-token: eyJ0eXAi...                       # current JWT (huge base64)
+        idp-issuer-url: https://idp.example.com/adfs # ADFS (AD Federation Services)
+        refresh-token: xeLlx...                     # gets a new id-token when it expires
       name: oidc
 ```
 
 A few things to note here:
 
-**`auth-provider: name: oidc`** — this is the *legacy* OIDC authentication format in kubeconfig, predating the `exec:` plugin approach. It was deprecated in client-go v1.22 and removed in v1.26. JPMC's internal kubectl build or tooling may keep this working, or they're pinned to an older kubectl version. The concept is identical to the OIDC exec plugin — just an older API shape.
+**`auth-provider: name: oidc`** — this is the *legacy* OIDC authentication format in kubeconfig, predating the `exec:` plugin approach. It was deprecated in client-go v1.22 and removed in v1.26. Enterprises may keep it working via a pinned/internal kubectl build. The concept is identical to the OIDC exec plugin — just an older API shape.
 
-**`idp-issuer-url: https://idag2.jpmchase.com/adfs`** — ADFS stands for Active Directory Federation Services. This is Microsoft's enterprise SSO/OIDC provider built into Windows Server. JPMC runs ADFS to provide OIDC tokens backed by their Active Directory. When `klogin` runs, it authenticates with ADFS (probably via Kerberos — tying back to ch02), and ADFS issues the `id-token` you see here.
+**`idp-issuer-url: .../adfs`** — ADFS stands for Active Directory Federation Services, Microsoft's enterprise SSO/OIDC provider. It provides OIDC tokens backed by Active Directory. A login tool authenticates with ADFS (often via Kerberos — see ch02), and ADFS issues the `id-token`.
 
-**`id-token`** — the big base64 blob. This is the JWT that kubectl presents to the API server as your credential. If you paste it into [jwt.io](https://jwt.io) you'd see your identity claims (user, groups, expiry). **This is sensitive data** — anyone with this token can impersonate you until it expires (typically 1 hour for JPMC tokens).
+**`id-token`** — the big base64 blob. This is the JWT that kubectl presents to the API server as your credential. Paste it into [jwt.io](https://jwt.io) to see the identity claims (user, groups, expiry). **This is sensitive data** — anyone with this token can impersonate you until it expires (often ~1 hour).
 
-**`refresh-token`** — when the `id-token` expires, kubectl uses the refresh token to get a new `id-token` from ADFS without re-prompting you. If the refresh token also expires, you need to run `klogin` again.
+**`refresh-token`** — when the `id-token` expires, kubectl uses the refresh token to get a new `id-token` from the IdP without re-prompting. If the refresh token also expires, you must re-run the login tool.
 
 ---
 
@@ -268,7 +248,7 @@ kubectl config get-contexts   # shows contexts from all three files merged
 
 To permanently set this, add the export to `~/.bashrc` or `~/.zshrc`.
 
-At JPMC, `klogin` likely writes to a specific file or appends to `~/.kube/config`. You can check which file your current context is in:
+Enterprise login tools may write to a specific file or append to `~/.kube/config`. Check which file your current context is in:
 ```bash
 kubectl config view --raw | grep -A3 current-context
 ```
@@ -281,15 +261,15 @@ A context does not restrict what namespaces you can access (that's RBAC). It set
 
 ```yaml
 contexts:
-  - name: casey@jpmc
+  - name: casey@prod
     context:
-      cluster: jpmc-prod
+      cluster: prod
       user: casey
-      namespace: 700515d201053-caas-dev   # ← your default; override with -n
+      namespace: team-dev   # ← default; override with -n
 ```
 
 Without this: `kubectl get pods` → scoped to `default` namespace  
-With this: `kubectl get pods` → scoped to `700515d201053-caas-dev`
+With this: `kubectl get pods` → scoped to `team-dev`
 
 You can always override with `-n <ns>` or `-A`/`--all-namespaces`.
 
@@ -304,19 +284,3 @@ You can always override with `-n <ns>` or `-A`/`--all-namespaces`.
 - **`set-context --current`** modifies the currently active context, not a new one. This is the fastest way to change your default namespace.
 - **`--kubeconfig` flag** takes a file path; `KUBECONFIG` env var takes a colon-separated list. They behave differently when merging is needed.
 - **Namespaces in contexts are not written into manifests.** A `namespace: finance` in a context only affects kubectl default behavior; it doesn't appear in pod YAML.
-
----
-
-## TL;DR
-
-kubeconfig is a YAML file at `~/.kube/config` with three lists: `clusters` (where to connect), `users` (who connects + their credentials), and `contexts` (marriages of one cluster + one user + an optional default namespace). `current-context` selects the active context. Certificates are either file paths or base64-inlined with a `-data` suffix. Your JPMC kubeconfig uses the legacy OIDC `auth-provider` format with ADFS as the identity provider — there IS a users section, it's just buried below the enormous JWT blob in the `id-token` field. The two commands you'll use most: `kubectl config use-context` to switch clusters, and `kubectl config set-context --current --namespace=<ns>` to change your default working namespace.
-
----
-
-## Open Threads
-
-- [ ] Certificate generation — how to create user certs, sign CSRs against the cluster CA, issue short-lived certs (CKA scope; worth understanding before CKA)
-- [ ] RBAC — what happens after kubeconfig establishes identity; Roles, RoleBindings (ch04 in this section)
-- [ ] ServiceAccount kubeconfig — how to create a kubeconfig file for a ServiceAccount (used for CI/CD pipelines and automation)
-- [ ] `KUBECONFIG` env var merging rules — what happens when two files define the same cluster name (first file wins for most fields)
-- [ ] kubelogin / exec plugin setup for personal cluster — connecting your own cluster to Google/GitHub OIDC

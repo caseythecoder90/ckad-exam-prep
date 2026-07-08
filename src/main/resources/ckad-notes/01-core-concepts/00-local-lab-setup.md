@@ -1,9 +1,5 @@
 # Local Lab Setup
 
-> This document captures everything about my CKAD lab setup — what's installed, why, how to recreate it, useful commands, and how it relates to the actual exam environment. If anything ever breaks or I get a new machine, this is the playbook.
-
----
-
 ## 1. Why have a local lab at all?
 
 Watching videos doesn't pass CKAD. The exam is **performance-based** — 15-20 hands-on tasks in 2 hours, typing real `kubectl` commands and writing real YAML on a remote Linux desktop. People who only watch and don't practice fail. The local lab gives me a real Kubernetes cluster to break and rebuild as I learn.
@@ -557,15 +553,15 @@ kubectl get namespaces
 ## 13. Pre-exam checklist
 
 A week before the exam:
-- [ ] Run the PSI System Check (link comes with registration)
-- [ ] Test the personal laptop, not the work one
-- [ ] Make sure I have a quiet room with no clutter visible
-- [ ] Webcam works, microphone works
-- [ ] Single monitor only — disconnect any external displays
-- [ ] Government-issued photo ID ready
-- [ ] killer.sh simulator done at least once (preferably twice)
+- Run the PSI System Check (link comes with registration)
+- Test the personal laptop, not the work one
+- Make sure I have a quiet room with no clutter visible
+- Webcam works, microphone works
+- Single monitor only — disconnect any external displays
+- Government-issued photo ID ready
+- killer.sh simulator done at least once (preferably twice)
 
 Day of:
-- [ ] Close everything except PSI Secure Browser before launch
-- [ ] No corporate VPN — disable
-- [ ] Have water nearby (proctor allows clear bottle)
+- Close everything except PSI Secure Browser before launch
+- No corporate VPN — disable
+- Have water nearby (proctor allows clear bottle)

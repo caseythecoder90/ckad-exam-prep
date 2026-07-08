@@ -1,15 +1,8 @@
 # Labels, Selectors, and Annotations
 
-> **Section:** 05-pod-design
-> **Course chapter:** 1 (Labels, Selectors, and Annotations)
-> **Why this is in CKAD:** Labels and selectors are the connective tissue of Kubernetes - ReplicaSets, Deployments, Services, and NetworkPolicies all find their targets by label. You must be able to add labels, filter with `--selector`, and write a `matchLabels` selector correctly. Annotations show up as a contrast and in their own right.
-> **Companion files:** `../03-multi-container-pods/03-init-containers.md` and `../04-observability/*` (selectors are how `kubectl logs -l` / `top -l` filter); ReplicaSet/Service/Deployment chapters later build directly on this
-
----
-
 ## 1. The mental model: group, then filter
 
-The instructor starts with a grid of animals and regroups them several ways - by color, by kind (bird/mammal), by class. The point: there is no single "correct" grouping; you attach **multiple** properties and slice by whatever criterion you need later.
+There is no single "correct" grouping of objects; you attach **multiple** properties and slice by whatever criterion you need later.
 
 That is exactly what labels are. A **label** is an arbitrary `key: value` tag you attach to an object. You can attach as many as you like, and the power is not the tagging itself but **filtering** by it afterward: "all blue animals," "blue birds," "everything in the frontend that is a web server." Labels are how you carve a meaningful subset out of a large set of objects.
 
@@ -17,7 +10,7 @@ That is exactly what labels are. A **label** is an arbitrary `key: value` tag yo
 
 ## 2. Labels
 
-Labels live under `metadata.labels` as key/value pairs. Common conventions the instructor uses: an `app` label (which application this object belongs to) and a `function` label (its role - `Front-end`, `web-server`, `database`, etc.).
+Labels live under `metadata.labels` as key/value pairs. Common conventions: an `app` label (which application this object belongs to) and a `function` label (its role - `Front-end`, `web-server`, `database`, etc.).
 
 ```yaml
 apiVersion: v1
@@ -120,9 +113,9 @@ Note the Service's `selector` is a flat map (equality-based, no `matchLabels`/`m
 
 ## 5. Real-world examples
 
-### Your NetworkPolicy -> CockroachDB egress (work)
+### NetworkPolicy -> database egress
 
-The NetworkPolicy you saw at work is a textbook selector use: the policy uses a **pod selector** to choose which pods it applies to, then defines egress rules for exactly those pods. Reconstructed shape:
+A NetworkPolicy is a textbook selector use: the policy uses a **pod selector** to choose which pods it applies to, then defines egress rules for exactly those pods. Example shape:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -144,13 +137,13 @@ spec:
           port: 26100                 # all DB destinations shared this port
 ```
 
-What is happening: `podSelector` picks your app's pods by label, `policyTypes: [Egress]` says "control outbound traffic for these pods," and the `egress` block whitelists TCP to the CockroachDB destinations on `26100` so your app can insert into the database. The selector is the hinge - it scopes the whole policy to just the pods carrying `app: caas-management-plane`. (Note: the `app == 'caas-management-plane'` form you saw is a selector *expression*; in NetworkPolicy YAML it is written as `matchLabels` or `matchExpressions`. The semantics are the same: equality on the `app` label. NetworkPolicy is a later topic; this is just to anchor why selectors matter.)
+What is happening: `podSelector` picks the app's pods by label, `policyTypes: [Egress]` says "control outbound traffic for these pods," and the `egress` block whitelists TCP to the CockroachDB destinations on `26100` so the app can insert into the database. The selector is the hinge - it scopes the whole policy to just the pods carrying `app: caas-management-plane`. (Note: in NetworkPolicy YAML the selector is written as `matchLabels` or `matchExpressions`; the semantics are equality on the `app` label. NetworkPolicy is a later topic; this is just to anchor why selectors matter.)
 
 ### `function` as an organizing label
 
-The instructor's `function` label maps cleanly to a real microservice estate: `function: Front-end`, `function: web-server`, `function: app-server`, `function: database`, `function: cache`, `function: auth`. Combined with `app`, you can address any slice: `-l app=payments,function=cache` is "the cache tier of the payments app."
+The `function` label maps cleanly to a real microservice estate: `function: Front-end`, `function: web-server`, `function: app-server`, `function: database`, `function: cache`, `function: auth`. Combined with `app`, you can address any slice: `-l app=payments,function=cache` is "the cache tier of the payments app."
 
-## 6. Annotations (the instructor skipped this - context here)
+## 6. Annotations
 
 Labels and annotations are both `key: value` metadata, but they serve **opposite** purposes, and the exam likes this contrast:
 
@@ -206,19 +199,3 @@ kubectl get pods -l '!tier'                           # label-absent
 kubectl get pods --show-labels                        # reveal labels
 kubectl get pods -L app -L function                   # labels as columns
 ```
-
-## 9. TL;DR / takeaways
-
-- **Labels** are arbitrary `key:value` identifying tags under `metadata.labels`; attach many, then **filter** with selectors. Group + filter is the whole model.
-- **Selectors** filter by label: `-l app=App1` (equality, AND on commas) or set-based (`in`, `notin`, `!key`).
-- Controllers find their targets by selector: a **ReplicaSet's `selector.matchLabels` must match its `template.metadata.labels`**; a **Service's `selector`** is a flat map matched against pod labels (and only *Ready* matches get traffic).
-- Real-world: a **NetworkPolicy `podSelector`** scopes egress rules to your app's pods (the CockroachDB-on-26100 case); `app` + `function` labels let you address any tier.
-- **Annotations** are non-identifying, non-selectable metadata for tooling/records (change-cause, build IDs, ingress config). If you'll select on it, it's a label; if not, an annotation.
-- Quote non-string label values; `kubectl label`/`annotate` (with trailing `-` to remove) are the imperative moves.
-
----
-
-### Open threads
-- [ ] **ReplicaSets/Deployments** chapters: the `matchLabels` == `template.labels` rule gets exercised heavily - cross-link when reached.
-- [ ] **Services & Networking**: Service `selector` -> endpoints, and the full **NetworkPolicy** model (revisit the CockroachDB egress example with real `matchLabels`/`ipBlock`).
-- [ ] **Rollouts**: `kubernetes.io/change-cause` annotation surfaces in `kubectl rollout history` - tie in at the Deployments rollout chapter.

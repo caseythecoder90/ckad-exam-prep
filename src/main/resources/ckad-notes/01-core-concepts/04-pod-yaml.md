@@ -1,6 +1,6 @@
 # 04 — Pod YAML manifests
 
-> The instructor's video covered the basics: structure, the four required fields, `kubectl create -f`. This chapter expands on that with YAML rules you need to know, then walks through a real production pod (a sample enterprise `order-processing-service`) field-by-field so you can read any pod manifest with confidence.
+This chapter covers YAML rules you need to know, then walks through a real production pod (a sample enterprise `order-processing-service`) field-by-field so you can read any pod manifest with confidence.
 
 ---
 
@@ -242,7 +242,7 @@ The `describe` output is your debugging gold mine — the **Events** section at 
 
 ## 6. Reading a real-world pod — production walkthrough
 
-The instructor showed a 12-line pod manifest. Production pods are 200+ lines. Here's how to read a real enterprise `order-processing-service` pod section by section.
+Production pods are 200+ lines. Here's how to read a real enterprise `order-processing-service` pod section by section.
 
 ![Real-world pod anatomy](./diagrams/16-real-world-pod-anatomy.png)
 
@@ -301,7 +301,7 @@ The three containers share `/app/logs` via a `ops-logs` volume. The main app wri
 
 ### env: where do environment variables come from?
 
-The instructor didn't cover this but it's all over your work pod and on the exam. There are **three sources** for env values:
+There are **three sources** for env values:
 
 ```yaml
 env:
@@ -720,28 +720,3 @@ k create namespace dev $do > ns.yaml
 k edit pod <name>
 k edit deployment <name>
 ```
-
----
-
-## Quick recall checklist
-
-- [ ] What are the four required top-level fields in any Kubernetes manifest?
-- [ ] What's the difference between `kubectl create -f` and `kubectl apply -f`?
-- [ ] Why is YAML indentation with tabs a bug? Spaces only?
-- [ ] What does `apiVersion: v1` apply to? When do you use `apps/v1`?
-- [ ] What are the three sources of values in `env:` (hardcoded, secretKeyRef, fieldRef)?
-- [ ] What does an init container do, and when does it run?
-- [ ] What's the difference between livenessProbe and readinessProbe?
-- [ ] What's the difference between `requests` and `limits` in resources?
-- [ ] How do `spec.volumes` and `container.volumeMounts` work together?
-- [ ] What does `--dry-run=client -o yaml` do, and why use it on the exam?
-- [ ] Can I generate a pod YAML from the command line in one shot?
-- [ ] What's the kubectl flag combo to print YAML without applying it?
-- [ ] Which kubectl command generates pod YAML? Which one generates deployment YAML, service YAML, configmap YAML?
-- [ ] For which fields do I need to edit the generated YAML rather than passing flags? (volumes, init containers, probes, multi-container)
-
----
-
-## Notes for next chapters
-
-Up next: ReplicaSets and Deployments. The production pod above was created by a ReplicaSet (look at the `ownerReferences`) which was created by a Deployment. Once we cover those, the full picture of "how does my app actually get running and stay running" snaps into focus.

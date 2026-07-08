@@ -1,24 +1,11 @@
 # Node Selectors
 
-> **Section:** 02-configuration
-> **Course chapter:** 11 (Node Selectors)
-> **Why this is in CKAD:** Examinable and quick. One label command, one
-> line in the pod spec. The exam tends to test the ordering trap (label
-> before scheduling) and the Pending-pod symptom when no node matches.
-> **Companion files:** `10-taints-and-tolerations.md` — the complementary
-> chapter. Taints *repel* (node side, push away); node selectors *attract*
-> (pod side, pull toward). Diagram 21 in chapter 10 already framed this;
-> this chapter is the "attract" half in detail. Node affinity (next
-> chapter) extends node selectors.
-
----
-
 ## 1. The problem
 
-The instructor's setup: a 3-node cluster where two nodes are small
-(limited CPU/memory) and one node is large. You have compute-intensive
-data-processing workloads that need the big node, and lighter workloads
-that can run anywhere.
+Setup: a 3-node cluster where two nodes are small (limited CPU/memory)
+and one node is large. You have compute-intensive data-processing
+workloads that need the big node, and lighter workloads that can run
+anywhere.
 
 By default, **the scheduler treats all nodes as equal candidates** — it
 places pods based on available resources and other constraints, but it
@@ -128,8 +115,6 @@ The fix is either to label a node or to remove/correct the selector.
 
 ## 4. Works on Pods, Deployments, anything with a pod template
 
-The instructor noted `nodeSelector` goes "in the pod definition file or
-deployment or wherever you define the pod spec." That's because
 `nodeSelector` is a field of the **PodSpec** — so it works anywhere a pod
 template appears:
 
@@ -205,9 +190,9 @@ all ANDed together, exact-match only. That simplicity is also its ceiling.
 
 ![nodeSelector limitations](diagrams/23-nodeselector-limitations.png)
 
-The instructor's closing example: suppose you want a pod to run on a
-node that is **Large OR Medium** — basically "anything that isn't Small."
-`nodeSelector` cannot express this:
+Example: suppose you want a pod to run on a node that is **Large OR
+Medium** — basically "anything that isn't Small." `nodeSelector` cannot
+express this:
 
 - **No OR.** `nodeSelector` can target `size: Large` or `size: Medium`,
   but not "Large or Medium."
@@ -278,42 +263,3 @@ Note the symmetry with taints: remove a label with a trailing `-`
 (`size-`), just like removing a taint (`key=value:effect-`). No
 imperative flag adds a `nodeSelector` to generated YAML — it's always a
 manual edit, so practice the `$do` → edit flow.
-
----
-
-## 10. TL;DR / takeaways
-
-1. **Node selector pins a pod to nodes carrying a specific label.** Two
-   steps: label the node, then add `nodeSelector` to the pod spec.
-2. **Label first, schedule second.** If no node has the matching label
-   when the pod schedules, the pod stays `Pending` forever — it's a hard
-   requirement, no fallback.
-3. `nodeSelector` is a field of the PodSpec → works in Pods, Deployments,
-   ReplicaSets, etc. (under `spec.template.spec` for controllers).
-4. **Multiple pairs = implicit AND.** All listed labels must match.
-5. **No OR, NOT, or ranges.** That ceiling is why node affinity exists
-   (next chapter) — affinity is a superset.
-6. Built-in labels (`kubernetes.io/arch`, `kubernetes.io/hostname`, zone,
-   instance-type) can be selected without manual labeling.
-7. Remove a node label with the trailing-minus syntax:
-   `kubectl label nodes node-1 size-`
-8. Diagnose a `Pending` pod with `kubectl describe pod` — a
-   `FailedScheduling` event mentioning "didn't match node affinity/
-   selector" points straight at a nodeSelector problem.
-
-### Resolved threads
-- [x] The "attract" complement to taints (open from
-      `10-taints-and-tolerations.md` §4 and diagram 21) — covered here.
-      The "dedicate a node" pattern needs both repel (taint) and attract
-      (label + selector).
-
-### Open threads
-- [ ] **Node affinity** — next chapter. Adds `In`/`NotIn`/`Exists`
-      operators, required vs preferred rules, and solves the OR/NOT/range
-      cases nodeSelector can't (§7). Supersedes nodeSelector.
-- [ ] **Pod affinity / anti-affinity** — pod-to-pod placement (co-locate
-      or spread), built on the same label-matching idea but targeting
-      other pods instead of nodes. Later.
-- [ ] **Resource requests/limits interplay** — `08-resource-requirements.md`:
-      requests drive scheduler bin-packing, selectors constrain the
-      candidate set. Real workloads combine both.

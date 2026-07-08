@@ -1,18 +1,6 @@
 # Docker Security (Prerequisite for K8s Security Contexts)
 
-> **Section:** 02-configuration
-> **Course chapter:** 06 (Security in Docker)
-> **Why this is in CKAD:** Not directly examinable as Docker — but it is the
-> substrate for Kubernetes Security Contexts (next chapter), which IS
-> examinable. The fields `runAsUser`, `capabilities`, and `privileged` in a
-> Pod spec are direct translations of the Docker concepts in this chapter.
-> Learn this once, the next chapter is a substitution exercise.
-
----
-
 ## 1. Containers share the host kernel — they are isolated, not separated
-
-The lecture's foundational point, worth being precise about:
 
 A container is **not** a VM. A VM runs its own kernel; a container does not.
 Every container on a host runs on **the host's single Linux kernel**. What
@@ -34,16 +22,9 @@ This matters because:
   whole reason containers exist — but a weaker isolation boundary. Different
   threat model than virtualization.
 
-> Tie-back to chapter 1: this is the kernel-level reality underneath the
-> "container vs VM" framing in `01-container-images-docker.md §1`. Same idea,
-> finally explained mechanically.
-
 ---
 
 ## 2. PID namespaces — same process, different PIDs
-
-The instructor's `sleep 3600` walkthrough is the cleanest illustration of how
-namespaces work in practice.
 
 ![PID namespaces - one process, two PIDs](./diagrams/10-pid-namespaces.png)
 
@@ -78,15 +59,14 @@ different PIDs in different namespaces. The first process in a container's PID
 namespace gets PID 1 (which is also why signal handling for PID 1 matters, as
 we saw in `02-commands-and-arguments.md §3` on exec form vs shell form).
 
-> Why "PID 1" inside the container is important: PID 1 is the init process.
-> If it exits, the namespace ends — i.e. the container stops. This is the
-> mechanical reason behind chapter 02's "container lives only as long as its
-> process" rule.
+PID 1 is the init process. If it exits, the namespace ends — i.e. the
+container stops. This is the mechanical reason behind chapter 02's "container
+lives only as long as its process" rule.
 
 ### Other namespaces (mentioned for completeness)
 
-PID isn't the only namespace. The lecture focuses on it because it's the most
-visceral, but Linux provides several types and Docker uses them all by default:
+PID isn't the only namespace. Linux provides several types and Docker uses
+them all by default:
 
 - **PID** — process tree isolation (the one the lecture demonstrates)
 - **Net** — separate network stack (own interfaces, routing, ports)
@@ -146,18 +126,13 @@ The reason you should override it for your own images:
 - It catches accidental "I'll just write to /etc" bugs early — they fail
   loudly instead of silently working in dev and breaking in prod.
 - It's what Kubernetes Security Contexts will let you enforce per-Pod with
-  `runAsUser`, `runAsNonRoot`, and `runAsGroup` (next chapter).
-
-> Forward reference: in K8s, `securityContext.runAsUser: 1001` on a Pod or
-> container is the direct equivalent of `docker run --user=1001`. Same
-> mechanism, different surface.
+  `runAsUser`, `runAsNonRoot`, and `runAsGroup` (next chapter). In K8s,
+  `securityContext.runAsUser: 1001` is the direct equivalent of
+  `docker run --user=1001`.
 
 ---
 
 ## 4. Linux capabilities — root is a bundle, not a switch
-
-This is the most important concept in the chapter, and the one the lecture
-introduced well.
 
 ![Linux capabilities - the three columns](./diagrams/11-linux-capabilities.png)
 
@@ -186,9 +161,7 @@ them"; modern kernels let you grant any subset.
 
 ### 4.2 What Docker actually does
 
-The instructor's question — *"if the container runs as root, does it have
-the same power as host root?"* — has a precise answer:
-
+If the container runs as root, does it have the same power as host root?
 **No.** Docker starts every container with a **restricted default capability
 set**. The container's "root" gets things like `CHOWN`, `KILL`, `SETUID`,
 `NET_BIND_SERVICE`, `NET_RAW`, `AUDIT_WRITE` — the capabilities ordinary
@@ -225,11 +198,8 @@ tooling) but is almost never the right answer.
 
 ## 5. The threat model — what containers actually protect
 
-This is the answer to your question about "doesn't someone running a
-container on the host being able to add permissions risk the host?" — and
-it's a subtle point worth being precise about, because it matters in
-production and it carries directly into how Kubernetes RBAC and Pod Security
-admission work.
+A subtle point worth being precise about, because it carries directly into
+how Kubernetes RBAC and Pod Security admission work.
 
 ### 5.1 What container isolation protects against
 
@@ -252,8 +222,8 @@ can ask for `--privileged`, they can ask for host volume mounts (`-v
 /:/host`), they can ask to share host namespaces (`--pid=host`,
 `--net=host`). The daemon will obey because that's its job.
 
-So when you ask "doesn't this let someone mess up the host" — yes, **if they
-already have `docker` access**. The standard Linux rule is:
+So yes, someone can mess up the host — **if they already have `docker`
+access**. The standard Linux rule is:
 
 > Membership in the `docker` group on a host is effectively passwordless
 > sudo. Treat it that way when granting it.
@@ -276,8 +246,7 @@ The mitigations real production environments use:
   effectively forbids the dangerous Docker-equivalent options at admission
   time.
 
-This is exactly why your eventual CKS prep will spend a lot of time on Pod
-Security admission: it's the layer that turns "anyone with cluster access
+Pod Security admission is the layer that turns "anyone with cluster access
 can ask for `--privileged`" into "you can't get a privileged Pod past
 admission unless policy explicitly allows it."
 
@@ -285,9 +254,7 @@ admission unless policy explicitly allows it."
 
 ## 6. The Docker → Kubernetes mapping (the chapter's whole purpose)
 
-Everything above translates directly into Kubernetes fields. This table is
-the takeaway you actually need for CKAD; the rest of the chapter exists so
-the table makes sense.
+Everything above translates directly into Kubernetes fields.
 
 | Docker (this chapter) | Kubernetes Security Context (next) |
 |---|---|
@@ -310,41 +277,3 @@ the table makes sense.
 The capabilities sub-field (`capabilities.add` / `capabilities.drop`) only
 exists at the **container** level, not the Pod level. The exam tests this
 specifically because it's the one place the parallel breaks.
-
----
-
-## 7. Key takeaways
-
-1. Containers share the host kernel; isolation is implemented by Linux
-   namespaces giving each container its own filtered view of system
-   resources (PID, net, mount, etc.). Same kernel; different views.
-2. PID namespaces are the cleanest illustration: the container's `sleep`
-   process is PID 1 inside the container and (say) PID 3816 on the host —
-   one process, two PIDs.
-3. Container processes run as root **inside the container's namespace** by
-   default. Override with `docker run --user=N` or `USER N` in the
-   Dockerfile.
-4. "root" is a bundle of ~40 Linux capabilities. Container root has a
-   **restricted default subset** — the obviously dangerous ones
-   (`SYS_ADMIN`, `SYS_TIME`, `SYS_MODULE`, `NET_ADMIN`, ...) are dropped.
-5. Tune with `--cap-add`, `--cap-drop`. `--privileged` re-grants everything;
-   treat it as a last resort.
-6. The threat model containers address is "rogue processes inside the
-   container." It does NOT protect the host from someone with Docker access
-   in the first place — the `docker` group is effectively root.
-7. Kubernetes Security Contexts (next chapter) are a direct mapping of
-   these Docker flags onto Pod/container YAML fields. Learn this once.
-
-### Resolved threads
-- [x] `01-container-images-docker.md` §1 — "container vs VM": kernel-level
-      reality now explained
-- [x] `02-commands-and-arguments.md` §3 — PID 1 / signal handling
-      consequence now grounded in PID namespaces
-
-### Open threads
-- [ ] Kubernetes `securityContext:` — Pod-level vs container-level,
-      `runAsUser` / `runAsNonRoot` / `capabilities` — next chapter
-- [ ] Pod Security Standards (`restricted`/`baseline`/`privileged`) and
-      Pod Security admission — CKS territory, but worth a forward reference
-- [ ] ServiceAccounts (still open from `05-secrets.md`)
-- [ ] Volumes proper (still open from `04-configmaps.md`)

@@ -1,6 +1,6 @@
 # 05 — ReplicationController and ReplicaSet
 
-> Pods alone are fragile. If a pod dies, it stays dead. ReplicationController and ReplicaSet are controllers that watch your pods and keep the right number of them running. This is what makes Kubernetes self-healing.
+Pods alone are fragile. If a pod dies, it stays dead. ReplicationController and ReplicaSet are controllers that watch your pods and keep the right number of them running. This is what makes Kubernetes self-healing.
 
 ---
 
@@ -8,7 +8,7 @@
 
 A single pod is a single point of failure. If it crashes, the application is down. If the node it's on goes down, the application is down.
 
-In real production environments, you don't run one of anything. At Visa we ran 4 pods per app in prod, 3 in CTE — minimum, by policy. Most large enterprises have similar minimums. The reasons:
+In real production environments, you don't run one of anything — a common policy minimum is 3-4 pods per app. The reasons:
 
 - **Resilience to pod crashes** — if one pod OOMs or hits a bug, the others keep serving traffic.
 - **Resilience to node failures** — pods land on different nodes, so a node going down only takes some replicas with it.
@@ -17,8 +17,6 @@ In real production environments, you don't run one of anything. At Visa we ran 4
 ![High availability](./diagrams/20-ha-replicas.png)
 
 The big idea: **even with a single replica**, the controller still gives you self-healing. If your one pod dies, the controller starts a replacement. So even when you only need one running instance, you should still use a controller to manage it — never just create a bare pod.
-
-> **Real-world story (cautionary tale):** at Visa, a memory issue in one team's app caused a node to fail. Other apps running on that node — including ours — were affected. Senior management pinned the blame on my manager, even though the root cause was an unrelated team's bug. This is part of why production policies mandate multiple replicas spread across nodes: a single-pod failure should never take down the whole app, regardless of which node it lands on. The controller-managed replicas pattern is what makes that recovery automatic.
 
 ---
 
@@ -145,7 +143,7 @@ This is the most important concept in this chapter. The selector is how the Repl
 
 ### The mental model
 
-A real cluster runs **thousands of pods** across many applications. At Visa, your team's pods shared a cluster with completely unrelated apps — billing, fraud detection, data pipelines. Most large enterprises are the same. The cluster doesn't care that those apps are unrelated; they're all just pods.
+A real cluster runs **thousands of pods** across many applications, often from unrelated teams sharing the same cluster. The cluster doesn't care that those apps are unrelated; they're all just pods.
 
 The ReplicaSet has to filter that ocean of pods to figure out which ones are *its* pods. That filter is the selector.
 
@@ -227,7 +225,7 @@ kubectl scale --replicas=6 replicaset myapp-replicaset
 
 ### Auto-scaling — covered later
 
-The instructor mentioned that Kubernetes can scale pods automatically based on CPU, memory, or custom metrics. This is the **HorizontalPodAutoscaler (HPA)** — out of scope for this chapter but you'll meet it in advanced sections. The idea: instead of you saying "replicas: 6", you tell Kubernetes "keep CPU below 70% — add or remove pods as needed."
+Kubernetes can scale pods automatically based on CPU, memory, or custom metrics. This is the **HorizontalPodAutoscaler (HPA)** — out of scope for this chapter but you'll meet it in advanced sections. The idea: instead of you saying "replicas: 6", you tell Kubernetes "keep CPU below 70% — add or remove pods as needed."
 
 ---
 
@@ -321,23 +319,3 @@ kubectl edit replicaset <name>
 kubectl delete replicaset <name>                # cascade: deletes pods too
 kubectl delete -f rs.yaml
 ```
-
----
-
-## Quick recall checklist
-
-- [ ] What's the difference between ReplicationController and ReplicaSet (apiVersion and selector behavior)?
-- [ ] Why does even a single replica benefit from a controller?
-- [ ] What does `apiVersion` need to be for a ReplicaSet?
-- [ ] What's required in a ReplicaSet that's optional in an RC?
-- [ ] What happens if the RS selector doesn't match the pod template labels?
-- [ ] What are the three ways to scale a ReplicaSet, and which one updates the YAML file?
-- [ ] How do you find every pod with the label `tier=front-end` from the command line?
-- [ ] Why don't you usually write ReplicaSets directly in real production?
-- [ ] What does `kubectl delete rs <name>` do to the pods underneath? How do you delete the RS but keep the pods?
-
----
-
-## Notes for next chapters
-
-Up next: **Deployments**. Here's where this all comes together. A Deployment creates and manages a ReplicaSet (which manages pods), and adds rolling updates, rollbacks, and rollout history on top. Remember the production pod from chapter 04? Its `ownerReferences` showed it was created by a ReplicaSet. The next layer up — what created that ReplicaSet — is a Deployment. After the next chapter, you'll have the full picture.

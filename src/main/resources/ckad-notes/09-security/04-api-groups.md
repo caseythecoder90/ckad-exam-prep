@@ -264,18 +264,3 @@ kubectl explain pod.spec.containers
 kubectl auth can-i list pods --as=system:anonymous
 kubectl auth can-i create deployments -n default
 ```
-
----
-
-## TL;DR
-
-The Kubernetes API is a URL tree rooted at the API server. Root-level paths (`/healthz`, `/metrics`, `/version`) are utility endpoints. Everything else lives under two branches: `/api` (core group — pods, services, configmaps, etc.) and `/apis` (named groups — apps, networking.k8s.io, rbac.authorization.k8s.io, etc.). The `apiVersion:` field in every YAML manifest is a direct encoding of this tree: `v1` = core group, `apps/v1` = apps named group. API groups are foundational to RBAC — the `apiGroups:` field in a Role rule must name the correct group for the resource, with `""` for core and the group name string for everything else. `kubectl proxy` is a local convenience tool for exploring the API; it has nothing to do with `kube-proxy` which is the cluster's service routing component.
-
----
-
-## Open Threads
-
-- [ ] RBAC deep dive — writing Roles, RoleBindings, ClusterRoles with correct apiGroups (ch05 this section)
-- [ ] CRDs — how custom resources extend `/apis` with custom groups (advanced topic)
-- [ ] API versioning and deprecation — how resources move from `v1alpha1` → `v1beta1` → `v1`; relevant for tracking when to update manifests
-- [ ] `kubectl explain` — your best friend for discovering YAML fields during the exam; uses this API tree internally

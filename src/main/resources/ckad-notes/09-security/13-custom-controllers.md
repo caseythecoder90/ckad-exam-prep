@@ -32,7 +32,7 @@ From the previous chapter: a CRD gives you a resource type (schema, storage,
 CRUD), but without a controller, those resources just sit in etcd doing
 nothing. The controller is what brings them to life.
 
-For the instructor's FlightTicket example:
+For the FlightTicket example:
 
 ```
 1. User creates FlightTicket resource  →  stored in etcd (status: Pending)
@@ -50,12 +50,11 @@ API to book them").
 
 ---
 
-## 2. Your question: what are realistic custom controller use cases?
+## 2. Realistic custom controller use cases
 
-The flight booking example is intentionally simple but somewhat misleading
-because it mixes business logic (booking flights) with infrastructure
-management (which is what controllers are typically used for). Here are
-real-world examples that make the pattern clearer:
+The flight booking example mixes business logic (booking flights) with
+infrastructure management (which is what controllers are typically used for).
+Real-world examples that make the pattern clearer:
 
 ### Platform / infrastructure operators (most common)
 
@@ -82,15 +81,6 @@ model:
    external APIs
 4. Controller updates the custom resource's `.status` subresource
 
-### Could a company like American Airlines use this?
-
-Probably not for booking flights directly — that's a business transaction
-better served by a traditional API service. But they might use a custom
-controller for:
-- Managing deployment rollouts across regions (CRD: `RegionalDeployment`)
-- Provisioning per-team namespaces with quotas (CRD: `TeamEnvironment`)
-- Managing database migration state machines (CRD: `SchemaMigration`)
-
 The sweet spot for custom controllers is: **anything where you want
 Kubernetes-style declarative management and continuous reconciliation for
 infrastructure or platform concerns**.
@@ -99,8 +89,8 @@ infrastructure or platform concerns**.
 
 ## 3. Anatomy of a custom controller (Go)
 
-The instructor shows the `kubernetes/sample-controller` repository on GitHub
-as a starting point. The key structural elements:
+The `kubernetes/sample-controller` repository on GitHub is a good starting
+point. The key structural elements:
 
 ```go
 // flightticket_controller.go
@@ -240,12 +230,10 @@ verbose. In practice, most people use a higher-level framework:
 | **Metacontroller** | Any (webhooks) | Controller-of-controllers; your logic is just webhook endpoints |
 | **Java Operator SDK** | Java | Spring Boot integration; relevant to your current skillset |
 
-The **Java Operator SDK** is worth noting for you specifically — it lets you
-write Kubernetes operators in Java with Spring Boot integration. The
-reconciliation loop, informer machinery, and CRD generation are handled by
-the framework. Your logic goes in a `Reconciler<T>` interface implementation.
-This could be a stepping stone: write an operator in Java first, then port to
-Go once you're comfortable with the patterns.
+The **Java Operator SDK** lets you write Kubernetes operators in Java with
+Spring Boot integration. The reconciliation loop, informer machinery, and CRD
+generation are handled by the framework; your logic goes in a `Reconciler<T>`
+interface implementation.
 
 ---
 
@@ -264,72 +252,3 @@ for the custom resource type.
 **Gotcha 3 – Operator = CRD + Controller**
 If the exam mentions "operators" — it's the combination of a CRD and a
 custom controller packaged together. Know the vocabulary.
-
----
-
-## 7. JPMC context
-
-Every operator in your stack deploys its controller as a Kubernetes
-Deployment with a privileged ServiceAccount:
-
-- **CockroachDB operator**: the controller Deployment watches `CrdbCluster`
-  CRDs. When you create a new CockroachDB cluster, the controller creates
-  the StatefulSets and Services. The controller's ServiceAccount has
-  permissions to create StatefulSets, Services, PVCs, ConfigMaps, and
-  Secrets in your SEAL namespace.
-
-- **Calico**: the Calico controller (calico-kube-controllers) runs as a
-  Deployment in `calico-system` namespace. It has ClusterRole permissions
-  because NetworkPolicy is cluster-affecting.
-
-- **Why you can't see controller logs easily**: the controller Deployments
-  typically run in system namespaces (`calico-system`, `projectcontour`,
-  operator namespaces) that your SEAL ID RBAC doesn't grant access to. On
-  your Hetzner cluster you'll be able to see these directly.
-
-- **The Java Operator SDK path**: when you're ready to build your own
-  operator, you could prototype in Java using the Java Operator SDK with
-  Spring Boot (familiar territory), then rewrite in Go as a learning
-  exercise. This maps directly to your goal of learning Go and eventually
-  contributing to Kubernetes.
-
----
-
-## 8. TL;DR
-
-- A custom controller is a process running a continuous reconciliation loop:
-  watch for custom resource changes → take action → update status.
-- Built-in controllers (DeploymentController, etc.) use the same pattern;
-  all run inside `kube-controller-manager`.
-- Custom controllers typically use the client-go library with informers,
-  work queues, and a reconciliation function.
-- Development workflow: start from `kubernetes/sample-controller`, customize
-  `controller.go`, build with `go build`, package as Docker image, deploy as
-  a Kubernetes Deployment.
-- Real-world use cases are infrastructure/platform management (database
-  operators, certificate management, GitOps, cloud resource provisioning) —
-  not business logic like booking flights.
-- **Operator = CRD + Controller** packaged together.
-- Frameworks like Kubebuilder, Operator SDK, and Java Operator SDK reduce
-  boilerplate.
-- Custom controllers are conceptual on CKAD — the exam tests CRDs, not
-  controller code.
-
----
-
-## Open threads
-
-- [ ] **ServiceAccounts** (dedicated chapter expected): controllers need
-  a ServiceAccount with appropriate RBAC. This ties back to the open thread
-  from ch07 about ServiceAccounts as subjects.
-- [ ] **Go learning path**: the sample-controller repo is an excellent
-  real-world Go codebase to study. Informers, work queues, and Go channels
-  are idiomatic Go patterns you'll encounter everywhere in the Kubernetes
-  codebase.
-- [ ] **Java Operator SDK**: prototype in Java first, then port to Go.
-  Bridge from current skills to Go learning goal.
-
-## Resolved threads (from ch12)
-
-- [x] **Custom controllers**: the "other half" of the CRD story — fully
-  covered. CRD defines the type, controller brings it to life.

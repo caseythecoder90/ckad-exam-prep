@@ -13,11 +13,11 @@ companion_diagrams:
 
 # Components — reusable, opt-in config bundles
 
-> **Context.** Overlays (Ch09) layer per-environment deltas onto a base. But some config is
-> a **feature** that several — but not *all* — environments need: a caching layer, an external
-> database, a premium-only add-on. Putting it in the **base** forces it on *everyone*; **copying**
-> it into each overlay duplicates it and invites drift. **Components** are the answer: a reusable
-> bundle of resources + patches (+ generators) that an overlay **opts into**.
+Overlays (Ch09) layer per-environment deltas onto a base. But some config is a **feature**
+that several — but not *all* — environments need: a caching layer, an external database, a
+premium-only add-on. Putting it in the **base** forces it on *everyone*; **copying** it into
+each overlay duplicates it and invites drift. **Components** are the answer: a reusable bundle
+of resources + patches (+ generators) that an overlay **opts into**.
 
 ---
 
@@ -127,9 +127,8 @@ k8s/
 ## 4. Per-environment credentials — the gap the lecture left
 
 The lecture's db component bakes a single `password=postgres123`, so **every** overlay that
-includes it gets the **same** secret. You asked the right question: what if the structure is
-shared but each environment needs a *different* password? There are two clean ways — the lecture
-just didn't cover them.
+includes it gets the **same** secret. What if the structure is shared but each environment
+needs a *different* password? There are two clean ways.
 
 ![Two ways to vary a component's secret per environment](./diagrams/24-component-per-env-secrets.png)
 
@@ -159,8 +158,8 @@ and the actual per-env value lives in an external store — **External Secrets O
 or **sealed-secrets**. The component reuses cleanly; the platform supplies the value per environment.
 
 > **Flag:** the lecture's `literals: [ password=postgres123 ]` is a **teaching simplification**.
-> Committing plaintext credentials to git is a no-go in any regulated repo — at JPMC you'd use
-> Fix B. Treat the literal as illustrative only.
+> Committing plaintext credentials to git is a no-go in any regulated repo — use Fix B. Treat
+> the literal as illustrative only.
 
 ---
 
@@ -198,60 +197,3 @@ kustomize edit add component ../../components/db
 # preview an overlay WITH its components resolved
 kubectl kustomize overlays/premium      # confirm the component's resources/patches landed
 ```
-
----
-
-## 8. JPMC / GKP grounding
-
-Components map cleanly onto how a platform ships **optional capabilities** to app teams:
-
-- A reusable **sidecar/feature bundle** (a logging agent, an Envoy config, a CockroachDB client
-  wiring) defined once under `components/` and opted into by the overlays that need it — instead
-  of baking it into every Kickstart base or copying it per repo.
-- **Per-env credentials** are exactly the JPMC pain point: you'd never use the lecture's literal.
-  The component wires `DB_PASSWORD` to a secret **name**, and the real value comes from the
-  platform's secret tooling per environment (**Fix B**) — keeping the component generic and the
-  repo free of plaintext creds. Namespace-scoped SEAL-ID RBAC then governs who can read it.
-- **`${variable}` injection (Jules)** still runs before the build, so a component's wiring can
-  reference `${namespace}`-scoped names and resolve at pipeline time.
-
----
-
-## TL;DR
-
-- **Components** = reusable bundles of resources + patches (+ generators) that overlays **opt into**
-  — for optional features needed by a **subset** of environments.
-- Declared with **`kind: Component`** + **`apiVersion: kustomize.config.k8s.io/v1alpha1`**; consumed
-  via the overlay's **`components:`** field.
-- Unlike a **base** (applies to all consumers) or **copying** (duplication), a component is define-once,
-  include-where-needed — and it can **patch** the resources it's composed onto.
-- **Per-env credentials:** override with overlay `secretGenerator` + `behavior: replace`, or (prod-grade)
-  keep the secret out of git and supply it externally. The lecture's plaintext literal is illustrative only.
-
-## Quick recall
-
-- [ ] When to use a component (vs base)? → optional feature for a *subset* of overlays.
-- [ ] Component `kind:` / `apiVersion:`? → `Component` / `kustomize.config.k8s.io/v1alpha1`.
-- [ ] How does an overlay include one? → the `components:` field (relative path).
-- [ ] Can a component patch a base resource? → yes (e.g. inject an env var into the base Deployment).
-- [ ] In what order do components apply? → as listed, after the base.
-- [ ] Different password per env, same component? → overlay `secretGenerator` `behavior: replace`, or externalize the secret.
-- [ ] Reference a component under `resources:`? → no — wrong kind; use `components:`.
-
-## Resolved threads
-
-- *(Your question) Same component, different password per environment?* → Yes — **Fix A**: override
-  the generated secret in each overlay via `behavior: replace`; or **Fix B**: don't generate it in the
-  component, reference by name and supply per-env from an external secret store. The lecture used one
-  password purely for simplicity.
-- *Why not just use a base for the caching/db feature?* → a base applies to **every** overlay;
-  components are **opt-in**.
-
-## Open threads
-
-- [ ] **Section + course complete.** This closes `11-kustomize` and the Mumshad CKAD lecture series.
-      Per your study plan, next is **review → KodeKloud labs → killer.sh practice exams → weak-area
-      passes** (docs open, search only when memory fails — mirrors exam conditions).
-- [ ] **`jules.yml` end-to-end trace** — the one carry-over still owed: `jules.yml → ${variable}
-      injection → kustomize build → rendered manifest` (`${containerImageUri}`, `${namespace}`),
-      pending the file share. Natural to write against the Ch09 overlay now that the section is done.

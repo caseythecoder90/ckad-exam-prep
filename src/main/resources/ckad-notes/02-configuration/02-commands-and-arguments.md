@@ -1,13 +1,9 @@
 # Commands & Arguments
 
-> **Section:** Configuration
-> **Course chapter:** Commands & Arguments in Docker
-> **Instructor's framing:** "Very important, although not a direct topic."
-> **What that actually means:** Docker CLI fluency is *not* tested by CKAD. What
-> *is* tested, and frequently fumbled, is the mapping of Docker's
-> `ENTRYPOINT`/`CMD` onto a Pod's `command:`/`args:`. This chapter exists to make
-> that mapping automatic. Treat the Docker half as context; treat the
-> Kubernetes half as the payload.
+Docker CLI fluency is *not* tested by CKAD. What *is* tested, and frequently
+fumbled, is the mapping of Docker's `ENTRYPOINT`/`CMD` onto a Pod's
+`command:`/`args:`. Treat the Docker half as context; treat the Kubernetes half
+as the payload.
 
 ---
 
@@ -31,8 +27,6 @@ up. The container's uptime is identical to the lifetime of its main process
 
 ### 1.1 Why `docker run ubuntu` exits immediately
 
-The instructor's demonstration:
-
 ```bash
 docker run ubuntu
 docker ps          # empty — nothing running
@@ -50,9 +44,8 @@ with no terminal is a process that has nothing to do and finishes, so the
 container finishes too. (`docker run -it ubuntu` *does* keep it alive, because
 now there's a terminal and `bash` waits on it.)
 
-> The slide's lightbulb "Cannot find the terminal" is the whole point: the image
-> didn't fail to install anything; the process simply had no reason to keep
-> running.
+The image didn't fail to install anything; the process simply had no reason to
+keep running.
 
 ---
 
@@ -94,8 +87,7 @@ on.
 
 ## 3. `CMD` — the shell form vs. JSON (exec) form
 
-The instructor is explicit about the syntax, and it's a real gotcha worth
-internalizing because it bites people in Pod YAML too.
+A real gotcha worth internalizing because it bites people in Pod YAML too.
 
 `CMD` (and `ENTRYPOINT`) accept two forms:
 
@@ -107,7 +99,7 @@ internalizing because it bites people in Pod YAML too.
 The rule for the JSON/exec form: it is a JSON array of strings. **The first
 element is the executable; each subsequent element is a separate argument.**
 
-What he flags as wrong:
+Wrong vs. right:
 
 ```dockerfile
 CMD ["sleep 5"]      # WRONG — one element: tries to run a binary
@@ -129,9 +121,8 @@ later as a Pod `command:`/`args:` YAML error.)
 
 ## 4. `ENTRYPOINT` vs `CMD` — the core mechanism
 
-This is the conceptual heart of the chapter and the examinable part. Both define
-"what runs when the container starts," but they behave differently when you pass
-arguments at runtime.
+The examinable part. Both define "what runs when the container starts," but they
+behave differently when you pass arguments at runtime.
 
 - **`CMD`** — the *entire* default command. Anything you pass on `docker run`
   after the image name **replaces it completely**.
@@ -143,7 +134,7 @@ arguments at runtime.
 
 ![ENTRYPOINT + CMD combination](./diagrams/04-entrypoint-cmd-combination.png)
 
-Walking the instructor's three cases for the `ubuntu-sleeper` image:
+Three cases for the `ubuntu-sleeper` image:
 
 | Dockerfile | `docker run ubuntu-sleeper` | `docker run ubuntu-sleeper 10` |
 |---|---|---|
@@ -164,9 +155,6 @@ runtime you need an explicit flag:
 docker run --entrypoint sleep2.0 ubuntu-sleeper 10
 # runs:  sleep2.0 10
 ```
-
-(The instructor's slide 10 shows exactly this — `--entrypoint sleep2.0` with
-arg `10` → `sleep2.0 10`.)
 
 ---
 
@@ -254,35 +242,3 @@ worth over-learning the *opposite* of the intuitive guess.
   jammed into one array element, or `command`/`args` swapped). Tie-back to the
   YAML-indentation/command-split failure modes already noted in earlier
   chapters — same family of mistake, just under time pressure.
-
----
-
-## 7. Key takeaways
-
-1. A container runs **one foreground process**; its uptime == that process's
-   lifetime. No long-running process → container exits. (`docker run ubuntu`
-   exits because `bash` finds no TTY.)
-2. Override the default **temporarily** by appending to `docker run`;
-   **permanently** by setting `CMD`/`ENTRYPOINT` in a custom image built
-   `FROM` a base.
-3. Exec/JSON form: `["executable", "arg1", "arg2"]` — executable and each arg
-   are **separate** elements. `["sleep 5"]` is wrong; `["sleep","5"]` is right.
-   Prefer exec form (signal handling / graceful shutdown).
-4. `CMD` = whole default command, fully replaced by runtime args.
-   `ENTRYPOINT` = fixed executable, runtime args appended.
-   Together: `ENTRYPOINT` + default-arg `CMD` is the idiomatic pattern.
-   Override `ENTRYPOINT` itself with `--entrypoint`.
-5. **CKAD payload — memorize cold:**
-   `command:` ↔ `ENTRYPOINT` (the binary);
-   `args:` ↔ `CMD` (its parameters).
-   *Not* the intuitive name-match. Both are YAML arrays.
-6. Pod: only `args:` → keeps image ENTRYPOINT; only `command:` → drops image
-   CMD; both → fully replaces.
-
-### Resolved threads from the previous chapter
-- [x] `ENTRYPOINT`/`CMD` → Pod `command:`/`args:` — done here (Section 5)
-
-### Open threads for later chapters
-- [ ] Env vars: `ENV` (Dockerfile) → Pod `env:` / `envFrom:` (next chapter)
-- [ ] ConfigMaps & Secrets feeding `env:` and volumes
-- [ ] Writable container layer → Volumes (still open from Ch.7)

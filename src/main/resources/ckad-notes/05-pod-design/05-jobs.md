@@ -1,12 +1,5 @@
 # Jobs (and restartPolicy)
 
-> **Section:** 05-pod-design
-> **Course chapter:** 5 (Jobs)
-> **Why this is in CKAD:** Jobs are a core workload type and directly testable - you must be able to write a Job, set `completions`/`parallelism`/`backoffLimit`, and know why a Job's pod template needs `restartPolicy: Never` or `OnFailure`. The CronJob lecture builds on this.
-> **Companion files:** `../03-multi-container-pods/03-init-containers.md` and `../04-observability/02-liveness-probes.md` (both left open threads on `restartPolicy` - this chapter resolves them); `02-deployment-updates-rollbacks.md` (a Deployment is the long-running counterpart to a Job)
-
----
-
 ## 1. Two kinds of workload
 
 Most workloads so far (web servers, the apps behind Deployments/ReplicaSets) are meant to run **indefinitely** - if the process exits, Kubernetes restarts it to keep it up. But some workloads are **run-to-completion**: do a task, finish, stop. Batch processing, analytics, report generation, a one-off migration, an image-processing pass. For these you do **not** want Kubernetes restarting the container after it succeeds.
@@ -15,11 +8,11 @@ This is the same distinction you saw with init containers (run once, exit) vs ap
 
 ## 2. The problem: default restart behavior fights run-to-completion
 
-The instructor's setup, in Docker first: `docker run ubuntu expr 3 + 2` runs, prints `5`, and the container **exits** (status `Exited (0)`). Docker leaves it stopped - fine.
+In Docker first: `docker run ubuntu expr 3 + 2` runs, prints `5`, and the container **exits** (status `Exited (0)`). Docker leaves it stopped - fine.
 
 Do the equivalent as a bare pod in Kubernetes and you hit a surprise: the container runs, prints `5`, exits 0 - and Kubernetes **restarts it anyway**, over and over, because a pod's default restart behavior is to keep the container running. You see this in the pod's climbing `RESTARTS` count even though the task succeeded.
 
-## 3. `restartPolicy` (the fix, and the resolved open thread)
+## 3. `restartPolicy` (the fix)
 
 The behavior is governed by **`spec.restartPolicy`** on the pod, which defaults to **`Always`**. Three valid values:
 
@@ -48,7 +41,7 @@ With `Never` (or `OnFailure`), the pod runs the command, prints `5`, exits, and 
 
 ## 4. Kubernetes Jobs
 
-A bare pod with `restartPolicy: Never` solves the restart loop, but it is still just one pod with no higher-level management. A **Job** is the proper object for run-to-completion work: it creates one or more pods, **ensures they run to successful completion**, retries failed pods, and tracks how many have succeeded. Contrast with a ReplicaSet, which keeps a fixed number of pods running *forever*; a Job drives pods to *finish* (image 4: ReplicaSet = always-on circles, Job = green checkmarks).
+A bare pod with `restartPolicy: Never` solves the restart loop, but it is still just one pod with no higher-level management. A **Job** is the proper object for run-to-completion work: it creates one or more pods, **ensures they run to successful completion**, retries failed pods, and tracks how many have succeeded. Contrast with a ReplicaSet, which keeps a fixed number of pods running *forever*; a Job drives pods to *finish*.
 
 ![restartPolicy splits workloads; a Job drives pods to completion](./diagrams/05-jobs-restartpolicy-completions.png)
 
@@ -98,11 +91,11 @@ spec:
       restartPolicy: Never
 ```
 
-The Job creates pods until **3 have succeeded**. By default they run **one after another** (sequentially): pod 1 completes, then pod 2, then pod 3 (image 8: three `Completed` pods).
+The Job creates pods until **3 have succeeded**. By default they run **one after another** (sequentially): pod 1 completes, then pod 2, then pod 3.
 
 ### Retry on failure
 
-If a pod **fails** (non-zero exit), the Job creates a **replacement** to still reach `completions`. The instructor's `kodekloud/random-error` image fails randomly, so the pod list shows a mix of `Completed` and `Error`, with the Job spawning extra pods until 3 *succeed* (image 9: green + red checkmarks, but `SUCCESSFUL 3`). The Job's job is to guarantee N **successes**, retrying failures along the way.
+If a pod **fails** (non-zero exit), the Job creates a **replacement** to still reach `completions`. An image that fails randomly (e.g. `kodekloud/random-error`) shows a mix of `Completed` and `Error` in the pod list, with the Job spawning extra pods until 3 *succeed* (`SUCCESSFUL 3`). The Job guarantees N **successes**, retrying failures along the way.
 
 ### `parallelism` - run them at the same time
 
@@ -116,16 +109,16 @@ spec:
       restartPolicy: Never
 ```
 
-`parallelism` caps how many pods run **concurrently**. With `completions: 3, parallelism: 3`, all three run in parallel; the Job keeps `parallelism` pods in flight until `completions` successes are reached (image 10). Tune `parallelism` to trade speed for resource pressure.
+`parallelism` caps how many pods run **concurrently**. With `completions: 3, parallelism: 3`, all three run in parallel; the Job keeps `parallelism` pods in flight until `completions` successes are reached. Tune `parallelism` to trade speed for resource pressure.
 
 | Field | Meaning | Default |
 |---|---|---|
 | `completions` | total **successful** pods required | 1 |
 | `parallelism` | max pods running **concurrently** | 1 (sequential) |
-| `backoffLimit` | retries before the Job is marked Failed (depth, not on the slides) | 6 |
-| `activeDeadlineSeconds` | wall-clock cap on the whole Job (depth) | none |
+| `backoffLimit` | retries before the Job is marked Failed | 6 |
+| `activeDeadlineSeconds` | wall-clock cap on the whole Job | none |
 
-Real-world tie-in (your long-running DB insert work): a Job with `parallelism` is exactly how you'd fan out a large batch insert across N workers and have Kubernetes guarantee every shard completes (retrying failed shards) - rather than babysitting a single long pod manually.
+Real-world tie-in: a Job with `parallelism` is exactly how you'd fan out a large batch insert across N workers and have Kubernetes guarantee every shard completes (retrying failed shards) - rather than babysitting a single long pod manually.
 
 ## 6. Exam-pattern gotchas
 
@@ -152,19 +145,3 @@ kubectl describe job math-add-job                 # completions, parallelism, ev
 kubectl delete job math-add-job                   # removes the job and its pods
 kubectl explain job.spec                          # recall completions/parallelism/backoffLimit
 ```
-
-## 8. TL;DR / takeaways
-
-- Workloads split into **long-running** (Deployments/ReplicaSets, `restartPolicy: Always`) and **run-to-completion** (Jobs, `restartPolicy: Never`/`OnFailure`).
-- **`spec.restartPolicy`** defaults to `Always`; that's why a bare task pod loops. Set `Never` or `OnFailure` for run-to-completion. (This is the field the init-container/liveness notes referenced.)
-- A **Job** (`batch/v1`) runs pods to **successful completion**, retrying failures; its `spec.template` is a normal pod spec and **must** set `restartPolicy` to `Never`/`OnFailure`.
-- **`completions`** = how many successful pods you need (sequential by default); **`parallelism`** = how many run at once. The Job keeps spawning/retrying until `completions` successes.
-- Pods end `Completed` (not `Running`); `kubectl get jobs` shows `SUCCESSFUL`; delete the Job to clean up its pods.
-- `restartPolicy` (pod) is unrelated to `strategy.type` (Deployment) - don't conflate them.
-
----
-
-### Open threads
-- [x] Resolves the `restartPolicy` open threads from `../03-multi-container-pods/03-init-containers.md` and `../04-observability/02-liveness-probes.md`.
-- [ ] **CronJobs** (likely next): a `CronJob` (`batch/v1`) wraps a Job template on a schedule (`schedule:` cron expression + `jobTemplate:`). Add as the next chapter.
-- [ ] `backoffLimit`, `activeDeadlineSeconds`, `ttlSecondsAfterFinished` - exercise these in killer.sh; they're depth beyond the lecture but exam-adjacent.

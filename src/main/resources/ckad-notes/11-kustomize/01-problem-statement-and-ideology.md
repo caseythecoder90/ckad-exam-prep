@@ -13,10 +13,8 @@ companion_diagrams:
 
 # Kustomize: Problem Statement & Ideology
 
-This is the "why does this tool exist" lecture. No `kustomization.yaml` syntax
-yet — that lands in the next chapter. Goal here: understand the duplication
-problem Kustomize solves and the **base + overlays** mental model, because every
-later chapter is just mechanics hung on this skeleton.
+Understand the duplication problem Kustomize solves and the **base + overlays**
+mental model, because every later chapter is just mechanics hung on this skeleton.
 
 CKAD note: Kustomize *is* examinable. It's templating-free and lives inside
 `kubectl`, so questions tend to be "edit this overlay / add this patch / build
@@ -57,9 +55,8 @@ Scale it: **N services × M environments = N×M files to keep byte-for-byte in
 sync, by hand.** The moment one edit is missed, environments drift and you're
 debugging a "works in stg, breaks in prod" ghost that is really just a typo.
 
-> The instructor (correctly) calls the directory approach *a* valid solution.
-> It's fine for a toy. It does not scale, and "doesn't scale" here specifically
-> means "doesn't stay correct."
+> The directory approach is *a* valid solution. It's fine for a toy. It does not
+> scale, and "doesn't scale" here specifically means "doesn't stay correct."
 
 > Depth — `-f dir/` vs `-k dir/`: `kubectl apply -f dev/` just applies whatever
 > YAML is sitting in the folder, no processing. That's the naive model.
@@ -198,58 +195,3 @@ exactly what the overlay produced.
   edit the overlay then `kubectl kustomize <dir>` to confirm the field actually
   changed in the rendered output before applying.
 
----
-
-## 7. JPMC / real-world grounding
-
-In a regulated multi-env setup (dev / uat / prod) with namespace-scoped RBAC like
-yours, the plain-YAML property is the selling point: an overlay change is a
-**reviewable, diffable** PR — a reviewer sees `replicas: 2 → 3`, not a templated
-value buried behind `{{ }}`. That matters for change control and audit. It also
-means the same SEAL-ID-scoped manifests can be validated with `--dry-run=server`
-against the namespace before they ever hit `prod`.
-
-Where it gets nuanced: shops that standardise on Helm for vendor charts often
-still use Kustomize to **post-render/patch** those charts for org policy (inject
-labels, NetworkPolicy annotations, registry rewrites) without forking the chart.
-So "Kustomize vs Helm" in practice is usually "Kustomize *and* Helm," each doing
-the part it's good at.
-
----
-
-## TL;DR
-
-- Naive per-env directories work but force you to maintain N×M duplicate files →
-  drift and outages from missed edits.
-- Kustomize = **base** (shared config + defaults) **+ overlays** (per-env deltas);
-  it merges them into the final manifest.
-- Standard layout: `k8s/base/` and `k8s/overlays/{dev,stg,prod}/`, each dir
-  anchored by a `kustomization.yaml`.
-- Ship with `kubectl apply -k <dir>` (or `kustomize build <dir> | kubectl apply -f -`).
-- Wins over Helm: built into kubectl, no templating language, everything is valid
-  YAML. Loses on: packaging / versioned releases / rollback.
-
-## Quick recall
-
-- [ ] What breaks in the three-directory approach? → N×M duplicate files, drift.
-- [ ] What are the two halves of Kustomize? → base + overlays.
-- [ ] What does a base hold vs an overlay? → shared/defaults vs the per-env delta.
-- [ ] What file anchors every Kustomize directory? → `kustomization.yaml`.
-- [ ] How do you render+apply an overlay? → `kubectl apply -k <dir>`.
-- [ ] How do you preview without applying? → `kubectl kustomize <dir>` / `kustomize build <dir>`.
-- [ ] `-k` vs `-f`? → `-k` runs the merge; `-f` applies raw files.
-- [ ] One reason to pick Kustomize over Helm? → no templating; plain valid YAML.
-
-## Resolved threads
-
-- *Is the directory-per-env approach wrong?* No — valid, just not scalable;
-  "not scalable" = "doesn't stay correct" as files/envs multiply.
-
-## Open threads (carried into ch.02+)
-
-- [ ] `kustomization.yaml` syntax: `resources:`, `bases:`/`resources: [../../base]`,
-      and how an overlay references its base.
-- [ ] Patch mechanisms: strategic-merge patches vs JSON6902 patches vs the
-      `replicas:`/`images:`/`namePrefix:`/`commonLabels:` transformers.
-- [ ] ConfigMap/Secret generators and the hash-suffix behaviour.
-- [ ] When the embedded-kubectl kustomize version actually bites you in CI.

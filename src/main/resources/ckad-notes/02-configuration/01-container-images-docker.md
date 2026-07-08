@@ -1,14 +1,5 @@
 # Container Images & Docker
 
-> **Section:** Configuration
-> **Course chapter:** Container Images (Docker focus)
-> **Why this is in CKAD:** Pods reference images; the exam expects you to read a
-> Dockerfile, understand `command`/`args` vs `ENTRYPOINT`/`CMD`, and reason about
-> image size. You won't *build* images in the exam, but the mental model here is
-> assumed knowledge for the Pod/Deployment config questions.
-
----
-
 ## 1. What an image is, and what it is not
 
 An **image** is a packaged, read-only template: a filesystem snapshot plus
@@ -31,19 +22,17 @@ from the Pod chapters: the image is the *desired template*, the container is the
 
 ## 2. "Containerize everything"
 
-The instructor's framing: historically, ops teams hand-installed and
-hand-configured software on hosts; environments drifted; "works on my machine"
-was structural, not a joke. The container value proposition is that the image
-**is** the environment — base OS userland, dependencies, your code, and the
-startup command, all pinned together and shipped as one immutable artifact.
+Historically, ops teams hand-installed and hand-configured software on hosts;
+environments drifted; "works on my machine" was structural, not a joke. The
+container value proposition is that the image **is** the environment — base OS
+userland, dependencies, your code, and the startup command, all pinned together
+and shipped as one immutable artifact.
 
-His slide shows browsers, `curl`, even Spotify being containerised. The point is
-not that you *should* containerise a desktop music app — it's that the unit of
-packaging is general: if it runs on Linux, it can be packaged this way. For CKAD,
-the relevant instance is **your application** packaged so the cluster can run N
-identical copies of it with zero per-node setup. This is the precondition that
-makes ReplicaSets/Deployments meaningful — every replica is byte-identical
-because they all instantiate the same image.
+The unit of packaging is general: if it runs on Linux, it can be packaged this
+way. For CKAD, the relevant instance is **your application** packaged so the
+cluster can run N identical copies of it with zero per-node setup. This is the
+precondition that makes ReplicaSets/Deployments meaningful — every replica is
+byte-identical because they all instantiate the same image.
 
 ---
 
@@ -112,16 +101,13 @@ starting from true nothing; you're starting from someone else's layers.
 
 ## 4. Layered architecture (and the build cache)
 
-This is the most important conceptual section in this chapter, and the part you
-specifically wanted captured.
-
 ![Layered architecture and build cache](./diagrams/02-layered-architecture-cache.png)
 
 ### 4.1 The core idea
 
 Docker builds the image **one layer per instruction**. Each layer records only
 the *filesystem delta* introduced by that instruction — not a full copy of
-everything. The instructor's `docker history` output makes this concrete:
+everything. A `docker history` output makes this concrete:
 
 | Layer | Instruction | Size |
 |---|---|---|
@@ -145,7 +131,7 @@ bytes. Same is true for `CMD`, `ENV`, `EXPOSE`, `WORKDIR` — they're cheap
 metadata layers. The expensive layers are the ones that write files: base OS and
 package installs.
 
-### 4.2 The build cache — the behaviour you asked about
+### 4.2 The build cache
 
 When Docker builds, it walks instructions top to bottom. For each instruction it
 asks: *"have I already built a layer for this exact instruction, on top of this
@@ -153,7 +139,7 @@ exact parent layer?"* If yes, it **reuses the cached layer** and prints
 `---> Using cache`. It does the actual work only from the first instruction
 where something changed.
 
-Two practical consequences, both of which you called out:
+Two practical consequences:
 
 **(a) Failure recovery.** If a build fails at, say, step 5 of 8, the layers for
 steps 1–4 are already cached. Fix the Dockerfile and rerun `docker build` — it
@@ -261,28 +247,3 @@ docker push youruser/myapp:1
 > the above runs as-is on the ThinkPad. `docker history` against any image you
 > build is the fastest way to *see* the layer/cache behaviour rather than just
 > read about it — recommend doing that once before moving on.
-
----
-
-## 8. Key takeaways
-
-1. Image = immutable template; container = running instance + thin writable
-   layer. Class/object.
-2. Dockerfile = ordered `INSTRUCTION ARGUMENT` recipe; first instruction is
-   always `FROM`.
-3. **One instruction → one layer.** File-writing layers are heavy; metadata
-   layers (`ENTRYPOINT`, `CMD`, `ENV`) are ~0 B.
-4. **Build cache:** unchanged leading instructions are reused; work resumes at
-   the first changed instruction; a change invalidates that layer **and every
-   layer after it**. Hence: stable steps first, volatile steps (source `COPY`)
-   last.
-5. Layers are content-addressed and shared across images and across pulls — part
-   of why running many identical containers is cheap.
-6. Writable container layer dies with the container → motivates Volumes.
-7. `:latest` is a mutable default tag, not "newest"; pin tags for
-   predictability; watch `imagePullPolicy` in stale-image troubleshooting.
-
-### Open threads to resolve in later chapters
-- [ ] `ENTRYPOINT`/`CMD` → Pod `command:`/`args:` (next chapter — examinable)
-- [ ] Writable layer → Volumes (`emptyDir` vs PV)
-- [ ] `imagePullPolicy` + `:latest` interaction → revisit under Pod config

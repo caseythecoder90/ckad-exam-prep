@@ -29,10 +29,10 @@ experimental, beta versions mature into GA, and old versions need to be
 retired. The API deprecation policy defines **how** and **when** versions
 can be removed, protecting users from surprise breakage.
 
-The instructor illustrates this with a custom API group `/kodekloud.com`
-that starts with `/v1alpha1` containing `Course` and `Webinar` resources.
-As the API matures it moves through `v1alpha2` → `v1beta1` → `v1beta2` →
-`v1`. The rules below govern how that progression works.
+Consider a custom API group `/kodekloud.com` that starts with `/v1alpha1`
+containing `Course` and `Webinar` resources. As the API matures it moves
+through `v1alpha2` → `v1beta1` → `v1beta2` → `v1`. The rules below govern
+how that progression works.
 
 ---
 
@@ -152,8 +152,7 @@ simultaneously supported, giving users time to migrate their manifests.
 
 ## 3. Version lifecycle timeline — the X+N visualization
 
-This is the timeline the instructor walks through showing how versions
-progress across Kubernetes releases. Reading this top-to-bottom:
+How versions progress across Kubernetes releases. Reading this top-to-bottom:
 
 ```
 K8s Release  │ API Group Version (latest in each track)  │ Preferred/Storage
@@ -237,7 +236,7 @@ just the `apiVersion` string.
 
 ## 5. CRD context — custom API groups and versions
 
-The instructor's `/kodekloud.com` example is really about Custom Resource
+The `/kodekloud.com` example is really about Custom Resource
 Definitions (CRDs). When you create a CRD you define your own API group
 (`kodekloud.com`), your own versions (`v1alpha1`), and your own resource
 types (`Course`, `Webinar`).
@@ -296,71 +295,3 @@ behavior — alpha has zero-release support guarantee.
 For exam questions asking "how long must X be supported": GA = 12 months or
 3 releases; Beta = 9 months or 3 releases; Alpha = 0. Always "whichever is
 longer" for GA and Beta.
-
----
-
-## 7. JPMC context
-
-The deprecation policy has direct relevance to your Spring Boot deployment
-manifests:
-
-- **Manifest hygiene at JPMC**: your deployment manifests use `apps/v1`
-  because that's been GA since Kubernetes 1.9. If any legacy manifests in
-  your team's repo still reference `extensions/v1beta1` or `apps/v1beta1`,
-  they'll fail on modern clusters. A migration sweep with `kubectl convert`
-  or manual edits is the fix.
-
-- **Cluster upgrades**: when JPMC's platform team upgrades the cluster
-  version, they check for deprecated API usage across all SEAL namespaces
-  before cutting over. Tools like `kubent` (kube-no-trouble) scan all
-  deployed resources for deprecated APIs and flag them. If your team hasn't
-  migrated manifests, the upgrade can break your deployments.
-
-- **CRD operators**: CockroachDB, Calico, Contour — these all install CRDs.
-  When those operators are upgraded, their CRD versions may change, and the
-  conversion webhook handles the migration. You don't write that webhook
-  yourself (the operator vendors do), but understanding the mechanism helps
-  debug issues when an operator upgrade goes sideways.
-
----
-
-## 8. TL;DR
-
-- **Rule #1**: Fields/behaviors can only be removed by creating a new version
-  of the API group (no silent removals within a version).
-- **Rule #2** (round-trip): Converting an object between any two supported
-  versions and back must not lose data. The conversion layer (not the old
-  schema itself) is responsible for preserving fields that only exist in
-  newer versions.
-- **Rule #3**: A version can't be deprecated until an equally-or-more-stable
-  replacement exists.
-- **Rule #4a**: Minimum support after deprecation: GA = 12 months / 3
-  releases; Beta = 9 months / 3 releases; Alpha = 0.
-- **Rule #4b**: Preferred/storage version can't advance until one release
-  supports both old and new simultaneously.
-- **`kubectl convert`** migrates manifests between API versions. It's a
-  plugin (not built into core kubectl) but should be available on the exam.
-- The version lifecycle timeline shows versions being introduced, becoming
-  preferred, being deprecated, and finally removed across K8s releases — each
-  step governed by the rules above.
-
----
-
-## Open threads
-
-- [ ] **Conversion webhooks** (CKA scope): the mechanism CRDs use to satisfy
-  Rule #2. An HTTP server that receives an object in version A and returns it
-  in version B. Built-in resources use an internal conversion layer instead.
-- [ ] **`kubent` (kube-no-trouble)**: a CLI tool that scans a cluster for
-  deprecated API usage. Useful pre-upgrade. Not exam content but valuable
-  for JPMC work.
-- [ ] **Storage version migration**: when the storage version changes, existing
-  objects in etcd are still stored in the old version until re-written. A
-  storage migration controller handles this. CKA territory.
-
-## Resolved threads (from ch10)
-
-- [x] **`kubectl convert`**: covered in section 4 — syntax, plugin
-  installation, and when to use it vs manual editing.
-- [x] **API deprecation policy**: previewed in ch10, now fully covered with
-  all four rules and the timeline visualization.

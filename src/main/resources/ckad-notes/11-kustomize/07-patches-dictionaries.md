@@ -13,18 +13,11 @@ companion_diagrams:
 
 # Patches — Dictionaries (add / replace / remove)
 
-> **Context.** Ch06 introduced *patches* as the surgical alternative to transformers:
-> a transformer (`commonLabels`, `namePrefix`, `images:` …) rewrites a whole class of
-> fields across all resources; a **patch** edits **one field on one targeted resource**.
-> Ch06 also split patches into the two flavours — **JSON 6902** (explicit `op`/`path`)
-> and **strategic merge** (a fragment of the real manifest) — and the two layouts
-> (**inline** `patch: |-` vs **separate file** `path: patch.yaml`).
->
-> This chapter drills into operating on a **dictionary** (a map field such as
-> `metadata.labels`): the three operations **add / replace / remove**, done both ways.
-> **Lists are deliberately a separate chapter (Ch08)** — there are enough dictionary
-> slides to stand alone, and lists have their own quirks (positional `-` vs index,
-> and `$patch: delete`).
+Ch06 split patches into two flavours — **JSON 6902** (explicit `op`/`path`) and
+**strategic merge** (a fragment of the real manifest) — and two layouts (**inline**
+`patch: |-` vs **separate file** `path: patch.yaml`). This chapter drills into operating
+on a **dictionary** (a map field such as `metadata.labels`): the three operations
+**add / replace / remove**, done both ways. Lists are a separate chapter (Ch08).
 
 ---
 
@@ -233,77 +226,3 @@ kubectl kustomize overlays/dev          # or:  kustomize build overlays/dev
 Always `kubectl kustomize <dir>` to **confirm the field actually changed** in the rendered
 output before `kubectl apply -k`. On the exam this catches a wrong path or a forgotten
 `~1` immediately.
-
----
-
-## 8. JPMC / GKP grounding
-
-Patches are how org-policy edits get layered onto a **Kickstart**-scaffolded base without
-forking it. The base is generated for you (Moneta Spring Boot app type, GKP platform); the
-overlay then patches in environment- or policy-specific deltas:
-
-- **Strategic-merge patches** to inject a `securityContext`, resource `limits`, or a
-  `priorityClassName` onto the base Deployment — readable, diffable, and they show up in a
-  PR as exactly the lines that changed (matters for change control / audit on a regulated
-  platform).
-- **JSON6902** when the edit is surgical or the field is awkward — e.g. flipping a single
-  `app.kubernetes.io/...` label (remember `~1`), where strategic merge would be overkill.
-- **Ordering with Jules:** `${variable}` substitution happens **before** Kustomize runs,
-  so a patch `value:` can itself be `${namespace}` or `${containerImageUri}` and arrive
-  already-resolved at build time. This is the same "three techniques" hybrid established in
-  Ch02 — structural overlay + pipeline injection — now applied at the *patch* layer.
-
-The practical division of labour on the team: **transformers** for the broad strokes
-(`images:`, `namespace:`), **patches** for the one-off field edits a transformer can't
-express cleanly.
-
----
-
-## TL;DR
-
-- A **patch** edits one field on one targeted resource; this chapter = **dictionary**
-  (map) fields, three ops: **add / replace / remove**.
-- **JSON6902** = explicit `op` + JSON-Pointer `path` (+ `value`), targeted via `target:`.
-  `add` = create-or-overwrite, `replace` = must-exist, `remove` = no value.
-- **Strategic merge** = a manifest fragment that's deep-merged; self-identifies via
-  `metadata.name`. Add/replace by naming the key; **delete only via `key: null`**.
-- Merge is additive — it **can't infer deletion from omission**, hence the explicit
-  `null` directive.
-- JSON6902 paths are `/`-delimited: escape `/` in keys as **`~1`** (and `~` as `~0`).
-- Both flavours run under the unified **`patches:`** field; both can be inline or in a
-  file. JSON6902 wins for CRDs/arbitrary fields; strategic merge reads more naturally.
-
-## Quick recall
-
-- [ ] Two patch flavours? → JSON6902 (op/path/value) and strategic merge (manifest fragment).
-- [ ] How does each pick its target? → JSON6902 via `target:`; strategic merge via `metadata.name` in the fragment.
-- [ ] `add` vs `replace` when the key is missing? → `add` creates it; `replace` errors.
-- [ ] Does `remove` take a `value:`? → No.
-- [ ] Delete a dict key with strategic merge? → `key: null` (omission does nothing).
-- [ ] Why is `null` required? → merge is additive; it can't infer deletion from absence.
-- [ ] Patch a label whose key is `app.kubernetes.io/name` via JSON6902 — the path? → `…/labels/app.kubernetes.io~1name`.
-- [ ] One field for both flavours? → `patches:` (legacy `patchesJson6902:`/`patchesStrategicMerge:` are superseded).
-- [ ] Verify before applying? → `kubectl kustomize <dir>`.
-
-## Resolved threads
-
-- *Why can't strategic merge just delete a key I leave out?* → Because a merge only
-  adds/overwrites named keys; unnamed keys are preserved by design. Deletion needs an
-  explicit directive (`null` for dicts).
-- *When JSON6902 vs strategic merge for a dictionary?* → Schema-less/CRD/awkward-field →
-  JSON6902; readable everyday Deployment edits → strategic merge.
-
-## Open threads (→ Ch08: Patches — Lists)
-
-- [ ] **List add (JSON6902):** a leading `-` appends to the **end** of the list; supplying
-      an **index** in the path inserts at a chosen position.
-- [ ] **List delete (strategic merge):** requires the explicit **`$patch: delete`**
-      directive (the list-level analogue of `key: null`) — same reason: merge can't infer
-      removal.
-- [ ] Strategic-merge list **merge keys** (how k8s decides "same element" when merging
-      lists of maps, e.g. containers by `name`).
-- [ ] `replacements:` (the modern successor to `vars:`) — copy a value from one field to
-      another — likely the next lecture after lists.
-- [ ] **`jules.yml` end-to-end trace** still owed: `jules.yml → ${variable} injection →
-      kustomize build → rendered manifest` (`${containerImageUri}`, `${namespace}`),
-      pending the file share.

@@ -12,13 +12,12 @@ companion_diagrams:
 
 # Overlays — base references, env-only resources, per-env patches
 
-> **Context.** Ch01 introduced base + overlays as the *mental model*; everything since
-> (directories, transformers, patches) has been the machinery. This chapter is the payoff:
-> how an **overlay** actually wires itself to a **base** and layers on per-environment
-> changes. A "base" and an "overlay" aren't special kinds — both are ordinary
-> `kustomization.yaml` directories. The only difference is the **role**: the base holds the
-> shared default config; the overlay *references* the base and adds/modifies it for one
-> environment.
+Ch01 introduced base + overlays as the *mental model*; everything since (directories,
+transformers, patches) has been the machinery. This chapter: how an **overlay** actually
+wires itself to a **base** and layers on per-environment changes. A "base" and an "overlay"
+aren't special kinds — both are ordinary `kustomization.yaml` directories. The only
+difference is the **role**: the base holds the shared default config; the overlay
+*references* the base and adds/modifies it for one environment.
 
 ---
 
@@ -165,55 +164,3 @@ kustomize edit add resource grafana-depl.yaml
 kubectl kustomize overlays/prod           # render only
 kubectl apply -k overlays/prod            # render + apply
 ```
-
----
-
-## 6. JPMC / GKP grounding
-
-This chapter *is* the team's daily workflow. A Kickstart-scaffolded repo (Moneta app on GKP)
-is base + per-env overlays, and what you've been studying maps 1:1:
-
-- The overlay references the base with the **deprecated `bases:`** form, then layers on the
-  GKP specifics: an **`images:` transformer** (`newName: ${containerImageUri}`), a
-  **`namespace: ${namespace}`** transformer, a **`configMapGenerator`** for the Spring profile,
-  and env-only resources (CockroachDB egress policy, Calico NetworkPolicy, Contour HTTPProxy).
-- **`${containerImageUri}` / `${namespace}` are injected by Jules *before* `kustomize build`** —
-  the "three techniques" hybrid: structural overlay + pipeline substitution. The overlay you
-  hand-edit is the same `kustomization.yaml` this chapter dissects.
-- **You ship the overlay** (`kubectl apply -k overlays/<env>` in the pipeline), namespace-scoped
-  by your SEAL-ID RBAC — exactly the "build the overlay, not the base" rule above.
-
----
-
-## TL;DR
-
-- "Base" and "overlay" are **roles**, not kinds — both are `kustomization.yaml` dirs.
-- Layout: `k8s/base/` (shared defaults) + `k8s/overlays/<env>/` (per-env deltas).
-- An overlay does three things: **reference the base** (`resources: - ../../base`; legacy
-  `bases:`), **add env-only resources**, and **patch base fields**.
-- Relative paths resolve from the overlay's own directory; `../../base` = up twice, into `base/`.
-- **Build/apply the overlay**, not the base. Scale with **per-app nested** kustomizations.
-
-## Quick recall
-
-- [ ] base vs overlay — special kinds? → No, both are kustomization dirs; difference is role.
-- [ ] Modern way to reference a base? → `resources: - ../../base` (legacy `bases:`).
-- [ ] Resolve `../../base` from `overlays/prod/`? → `k8s/base/`.
-- [ ] Add a prod-only Grafana — where? → the prod overlay's `resources:`, not the base.
-- [ ] Change replicas per env — how? → a patch in the overlay targeting the base Deployment.
-- [ ] What do you apply? → the overlay (`kubectl apply -k overlays/<env>`).
-- [ ] Can a base live remotely? → yes, a versioned git URL under `resources:`.
-
-## Resolved threads
-
-- *(From Ch01) How does an overlay actually reference its base?* → as a directory under
-  `resources:` (or the deprecated `bases:`), with a relative path from the overlay's own dir.
-- *Do I build the base or the overlay?* → the overlay; it pulls in the base.
-
-## Open threads
-
-- [ ] **Ch10 — Components**: reusable resource+patch bundles opted into by a *subset* of
-      overlays (`kind: Component`, referenced via `components:`). → next, closes the section.
-- [ ] **`jules.yml` end-to-end trace** still owed: `jules.yml → ${variable} injection →
-      kustomize build → rendered manifest` (`${containerImageUri}`, `${namespace}`), pending
-      the file share. (This chapter's overlay is exactly where that trace would land.)

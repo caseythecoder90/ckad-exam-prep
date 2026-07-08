@@ -12,9 +12,8 @@ companion_diagrams:
 
 # Managing Directories (Nested kustomization.yaml)
 
-Continuation of ch.03. Once a project has several services, you split them into
-subdirectories (`api/`, `db/`, …). This chapter is about how Kustomize scales that
-up: the one new mechanic is that **a `kustomization.yaml` can reference a
+Once a project has several services, you split them into subdirectories
+(`api/`, `db/`, …). The one new mechanic: **a `kustomization.yaml` can reference a
 directory, not just a file** — which lets you nest kustomizations.
 
 ---
@@ -154,80 +153,3 @@ kustomize edit add resource cache/      # add a dir/file to resources: in place
 When a nested build misbehaves, `kubectl kustomize k8s/` (render-only) is the
 fastest way to see the fully-merged output and spot the missing/duplicated
 resource before you ever apply.
-
----
-
-## 6. JPMC / GKP grounding — you already nest, by environment
-
-What you described at work *is* nested kustomizations — you just nest **vertically
-by environment** instead of horizontally by service:
-
-```
-kube/kustomize/
-├── base/
-│   └── kustomization.yml          # resources: [ service.yml, ... ]   (Image 5)
-└── overlays/
-    ├── dev/
-    │   └── kustomization.yml       # bases: [ ../../base/ ]; resources/images/namespace/configMapGenerator  (Image 4)
-    ├── stg/
-    │   └── kustomization.yml
-    └── prod/
-        └── kustomization.yml
-```
-
-Two levels of `kustomization.yml`: one at `base/`, one in each overlay. The
-overlay's `kustomization.yml` **references the base directory** (`bases: ../../base/`,
-i.e. the deprecated spelling of `resources: ../../base/`) — that reference *is* a
-nested kustomization. So the base+overlay model from ch.01 is the same directory-
-nesting mechanic this lecture teaches; ch.01 nests by env, this lecture nests by
-service.
-
-Your own realisation is the right one: if a single environment's manifest count
-keeps growing, you can nest **again inside** each overlay — split `dev/` into
-`dev/api/`, `dev/db/`, … each with its own `kustomization.yml`, and have
-`dev/kustomization.yml` reference those subdirs. You'd then be nesting on **both**
-axes (environment × service), which is exactly how large GKP-style repos stay
-organised. Transformer cascade makes this clean: env-level concerns
-(`namespace: ${namespace}`, the image rewrite) sit in the overlay and apply down
-over every service folder automatically.
-
-> CKAD scope: directory references in `resources:`, nested builds, and recursion
-> are fair game. The `base/ + overlays/` split and `${...}` injection are GKP
-> flavour — the mechanism underneath is the examinable part.
-
----
-
-## TL;DR
-
-- A `kustomization.yaml` `resources:` entry can be a **file or a directory**; a
-  directory entry must itself contain a `kustomization.yaml`.
-- Evolution: per-dir `kubectl apply` (grows with dirs) → one flat kustomization
-  (grows with files) → **nested** kustomizations (top lists only dirs, each dir
-  self-manages) — only the last scales.
-- `kubectl apply -k k8s/` builds the top and **recurses** into every referenced
-  directory, applying the whole tree in one command.
-- Top-level transformers **cascade** onto everything pulled in from children.
-- Your GKP base+overlay layout already is nested kustomization (by environment);
-  you can nest again by service inside an overlay as files grow.
-
-## Quick recall
-
-- [ ] Can `resources:` reference a directory? → yes, if it holds a `kustomization.yaml`.
-- [ ] File-dir vs `-f` dir? → `resources: dir/` needs a kustomization.yaml; `-f dir/` applies loose YAML.
-- [ ] Does `build` recurse into nested kustomizations? → yes.
-- [ ] Where do relative paths resolve from? → the location of the referencing `kustomization.yaml`.
-- [ ] Do top-level transformers affect nested resources? → yes, they cascade over the merged output.
-- [ ] One command to deploy a nested tree? → `kubectl apply -k k8s/`.
-- [ ] Deprecated nesting field? → `bases:` (now use `resources:`).
-
-## Resolved threads
-
-- *How an overlay references its base / the base+overlay structure* (open since
-  ch.01) → it's directory nesting via `resources:` (old `bases:`), resolved here.
-
-## Open threads (carried into ch.05+)
-
-- [ ] Patch mechanisms in depth: strategic-merge patch vs JSON6902 patch vs the
-      inline `replicas:`/`images:` transformers — when to use which.
-- [ ] `namePrefix`/`nameSuffix`, `replacements:` (modern replacement for `vars:`).
-- [ ] Full `jules.yml → injected → kustomize build → rendered` trace — pending the `jules.yml`.

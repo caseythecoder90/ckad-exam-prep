@@ -1,29 +1,22 @@
 # CronJobs
 
-> **Section:** 05-pod-design
-> **Course chapter:** 6 (CronJobs)
-> **Why this is in CKAD:** Scheduled batch workloads are fair game on the exam. You may be asked to create a CronJob, read/interpret a cron `schedule` string, convert a one-off Job into a scheduled one, or debug a manifest whose three nested `spec:` blocks are mis-indented. Fast, correct YAML here is pure points.
-> **Companion files:** `05-jobs.md` (a CronJob *wraps* a Job — read that first), `03-multi-container-pods/03-init-containers.md` and `04-observability/02-liveness-probes.md` (the `restartPolicy` thread originated there, resolved in `05-jobs.md`).
+## 1. What a CronJob is
 
----
-
-## 1. What a CronJob is (instructor framing)
-
-Mumshad frames a CronJob as a Job that runs **on a schedule** — the Kubernetes analog of Linux `cron`. The relationship is a three-link chain:
+A CronJob is a Job that runs **on a schedule** — the Kubernetes analog of Linux `cron`. The relationship is a three-link chain:
 
 ```
 CronJob  --(on each schedule tick)-->  Job  --(creates)-->  Pod(s)
 ```
 
-The key move he demonstrates: take the **`spec` of a Job definition** and drop it, almost verbatim, into a new CronJob definition under the `jobTemplate` property. You are not writing the Job's behavior from scratch — you are embedding a Job spec inside a CronJob spec and letting the CronJob controller stamp out a fresh Job every time the schedule fires.
+The key move: take the **`spec` of a Job definition** and drop it, almost verbatim, into a new CronJob definition under the `jobTemplate` property. You are not writing the Job's behavior from scratch — you are embedding a Job spec inside a CronJob spec and letting the CronJob controller stamp out a fresh Job every time the schedule fires.
 
-He explicitly warns about the nesting: his example contains **three `spec:` sections**, and getting their indentation wrong is the single most common way to break the file. That warning is the whole point of this chapter and is the subject of the diagram below.
+Watch the nesting: a CronJob manifest contains **three `spec:` sections**, and getting their indentation wrong is the single most common way to break the file. That is the subject of the diagram below.
 
 ---
 
 ## 2. The cron schedule format
 
-The `schedule` field is a standard 5-field cron expression (the slide pulls this straight from Wikipedia):
+The `schedule` field is a standard 5-field cron expression:
 
 ```
  # ┌───────────── minute        (0 - 59)
@@ -53,7 +46,7 @@ Operators worth knowing for the exam:
 | `a,b,c` | list | `0 0 * * 1,3,5` = midnight Mon/Wed/Fri |
 | combo | — | `0 2 * * 0` = 02:00 every Sunday |
 
-The slide's example `"*/1 * * * *"` means **every minute** (`*/1` is functionally identical to `*`).
+The example `"*/1 * * * *"` means **every minute** (`*/1` is functionally identical to `*`).
 
 **Quote it.** In YAML, `schedule: "*/1 * * * *"` should be a **quoted string**. The value starts with `*`, and a bare `*` at the start of a YAML scalar is a parse hazard (and `*anchor` is reserved alias syntax). Quoting is the safe habit; flag this as a CKAD gotcha.
 
@@ -81,37 +74,35 @@ Note one easy-to-miss detail: **`jobTemplate` has no `apiVersion`, `kind`, or `m
 
 ---
 
-## 4. apiVersion: the slides are out of date (beyond the lecture)
+## 4. apiVersion: use batch/v1
 
-**The slides show `apiVersion: batch/v1beta1`. Do not use that.** This is the one place where the course is teaching a deprecated, now-*removed* API.
+**`apiVersion: batch/v1beta1` for CronJob is deprecated and removed. Do not use it.**
 
 - CronJob graduated to **stable `batch/v1`** in Kubernetes **1.21**.
 - `batch/v1beta1` for CronJob was **removed entirely in Kubernetes 1.25**.
 
 On any current cluster — including the CKAD exam environment, which tracks a recent Kubernetes release — `apiVersion: batch/v1beta1` for a CronJob will be rejected outright (`no matches for kind "CronJob" in version "batch/v1beta1"`). **Always write `apiVersion: batch/v1`.**
 
-(The Job resource itself has been `batch/v1` for a long time; only CronJob carried the beta version. Worth internalizing for CKA/CKS too, where API-version churn shows up more.)
+(The Job resource itself has been `batch/v1` for a long time; only CronJob carried the beta version.)
 
 ---
 
-## 5. "Reference another file like calling a method" — clearing up the mental model
+## 5. No native file references — `jobTemplate` is inlined
 
-You raised a reasonable intuition: *you should be able to just reference a different file, the way we call a method from within a method.* As a software engineer that's the natural expectation, but it's worth being precise because vanilla Kubernetes manifests don't work that way, and the exam tests vanilla.
+Vanilla Kubernetes manifests do not support referencing another file the way a method calls another method.
 
-- **There is no `$ref`, no `include`, no import in core Kubernetes YAML.** `jobTemplate` is not a pointer to `job-definition.yaml` — it is the Job spec **inlined**, copied in full. The CronJob document is entirely self-contained. The apiserver never reads your other files; it only sees the single manifest you `apply`.
-- So the "method call" framing breaks down: it's closer to **manual inlining / copy-paste** than to a function reference. The slide's "take the Job's spec and put it under `jobTemplate`" is literally a copy operation.
+- **There is no `$ref`, no `include`, no import in core Kubernetes YAML.** `jobTemplate` is not a pointer to `job-definition.yaml` — it is the Job spec **inlined**, copied in full. The CronJob document is entirely self-contained. The apiserver never reads other files; it only sees the single manifest you `apply`.
+- "Take the Job's spec and put it under `jobTemplate`" is literally a copy operation — manual inlining, not a function reference.
 
-What *does* give you the composition you're reaching for, when you eventually want it (and you will at JPMC scale):
+What *does* give you that composition, when you want it:
 
 | Tool | What it does for this problem |
 |---|---|
 | **Kustomize** (`kubectl apply -k`) | Bases + overlays; share a common Pod/Job spec across environments without retyping. Built into `kubectl`. |
 | **Helm** | Templating + values; a chart can render the Job spec into both a standalone Job and a CronJob from one source. |
-| **YAML anchors/aliases** (`&`, `*`) | In-file reuse only — and frustratingly, `kubectl` strips them on the way in, so they help *authoring* but the stored object is still fully expanded. |
+| **YAML anchors/aliases** (`&`, `*`) | In-file reuse only — and `kubectl` strips them on the way in, so they help *authoring* but the stored object is still fully expanded. |
 
-For CKAD, none of that is in scope — expect to **hand-write all three specs inline** and get the indentation right. The composition tooling is a CKA/real-world concern; I'm flagging it so the "why can't I just reference it" itch has a real answer.
-
-> **Real-world anchor (JPMC):** this is exactly the shape of the nightly reporting / reconciliation batch jobs you run on the microservice — a container that does one bounded unit of work and exits, fired on a settlement-window schedule. In production that Job spec almost certainly lives in a Helm chart or Kustomize base so the same definition serves dev/UAT/prod; on the exam you'll reproduce the *expanded* result by hand.
+For CKAD, none of that is in scope — expect to **hand-write all three specs inline** and get the indentation right. The composition tooling is a CKA/real-world concern.
 
 ---
 
@@ -150,9 +141,9 @@ kubectl apply -f cron-job-definition.yaml
 
 ---
 
-## 7. CronJob-specific fields the lecture skips (beyond the lecture, but exam-relevant)
+## 7. CronJob-specific fields
 
-These live in **spec #1** (the CronJob spec) and are worth knowing — `concurrencyPolicy` and `suspend` in particular show up in questions and in `kubectl get cronjob` output.
+These live in **spec #1** (the CronJob spec) — `concurrencyPolicy` and `suspend` in particular show up in questions and in `kubectl get cronjob` output.
 
 | Field | Default | What it does |
 |---|---|---|
@@ -175,7 +166,7 @@ kubectl get cronjob
 # reporting-cron-job  */1 * * * *   False     0        30s             5m
 ```
 
-The slide shows the older 4-column form (`NAME SCHEDULE SUSPEND ACTIVE`); current `kubectl` adds `LAST SCHEDULE` and `AGE`. Same data, don't be thrown if the columns differ.
+Older `kubectl` shows a 4-column form (`NAME SCHEDULE SUSPEND ACTIVE`); current `kubectl` adds `LAST SCHEDULE` and `AGE`. Same data, don't be thrown if the columns differ.
 
 ```bash
 kubectl get jobs            # the Jobs the CronJob has created (one per fired tick)
@@ -183,7 +174,7 @@ kubectl get pods            # the Pods those Jobs created
 kubectl describe cronjob reporting-cron-job   # events: "Created job ..." each tick
 ```
 
-Mental model for debugging: if pods aren't appearing, walk the chain top-down — is the **CronJob** firing (`describe` events / `ACTIVE`)? Is the **Job** being created (`get jobs`)? Are the **Pods** failing (`get pods`, then `logs`)? This is the same apply → read error → fix loop you've been using in the KodeKloud labs, just one layer taller.
+Mental model for debugging: if pods aren't appearing, walk the chain top-down — is the **CronJob** firing (`describe` events / `ACTIVE`)? Is the **Job** being created (`get jobs`)? Are the **Pods** failing (`get pods`, then `logs`)? Same apply → read error → fix loop, just one layer taller.
 
 ---
 
@@ -195,7 +186,7 @@ Mental model for debugging: if pods aren't appearing, walk the chain top-down �
 - **Quote the schedule:** `schedule: "*/1 * * * *"`. A leading `*` unquoted is a YAML hazard.
 - **`restartPolicy` is required** and lives in the **Pod** spec (#3); only `Never` or `OnFailure` are valid for Job-backed pods.
 - **`containers:` is a list** — the `- name:` dash matters (same rule as every pod spec).
-- **vim discipline:** before pasting this much nested YAML, `:set paste` (autoindent will otherwise mangle the indentation — exactly the failure this chapter warns about). `:set list` to reveal stray tabs. Your `~/.vimrc` already handles the common cases.
+- **vim discipline:** before pasting this much nested YAML, `:set paste` (autoindent will otherwise mangle the indentation — exactly the failure this chapter warns about). `:set list` to reveal stray tabs.
 
 ---
 
@@ -222,28 +213,4 @@ kubectl patch cronjob reporting-cron-job -p '{"spec":{"suspend":true}}'
 kubectl create job --from=cronjob/reporting-cron-job manual-run-001
 ```
 
-**Imperative limitation (parallels the multi-container lesson):** `kubectl create cronjob` produces a **single-container** pod and gives you **no flag for `completions` or `parallelism`**. If the question asks for those, scaffold with `$do`, then hand-edit `spec.jobTemplate.spec` to add `completions:`/`parallelism:`, validate with `--dry-run=client`, then apply. Same workflow you use for multi-container pods.
-
----
-
-## TL;DR / takeaways
-
-- A CronJob runs a Job on a cron schedule: **CronJob → Job → Pod**.
-- **Three nested `spec:` blocks** — CronJob (`spec`), Job (`spec.jobTemplate.spec`), Pod (`...template.spec`). Indentation is the whole game. Read them as **WHEN / HOW / WHAT**.
-- **Use `batch/v1`.** The slides' `batch/v1beta1` is removed as of k8s 1.25.
-- `jobTemplate` is a **bare spec** — no apiVersion/kind/metadata.
-- **Quote the schedule string;** `*/1 * * * *` = every minute.
-- `restartPolicy` (Never|OnFailure) lives in the **Pod** spec and is required.
-- Kubernetes YAML has **no native file references** — `jobTemplate` is inlined, not a pointer. Composition is Helm/Kustomize territory (CKA/real-world, not CKAD).
-- Useful spec-#1 fields beyond the lecture: `concurrencyPolicy` (Allow/Forbid/Replace), `suspend`, `timeZone`, history limits.
-- Imperative: `kubectl create cronjob --image --schedule`; no `completions`/`parallelism` flags, so scaffold-and-edit when needed. Test the payload now with `kubectl create job --from=cronjob/<name>`.
-
----
-
-### Open threads
-
-- [ ] Confirm the exact Kubernetes minor version on the current CKAD exam image and note whether `timeZone` (GA 1.27) is settable there — verify on killer.sh.
-- [ ] Practice the scaffold-and-edit flow for a CronJob requiring `completions`/`parallelism` against the kind cluster (mirror exam conditions, docs closed first).
-- [ ] Try `concurrencyPolicy: Forbid` vs `Replace` on a deliberately slow job (`sleep 120`, schedule `*/1`) to *see* the behavior difference, not just read it.
-- [ ] `restartPolicy` thread: fully closed (Never|OnFailure for Job/CronJob pods; carried over from `05-jobs.md`). Nothing outstanding.
-- [ ] Section 05-pod-design status after this file: chapters 01–06 done, diagrams 01–06 done. Next lecture likely opens **section 06** → reset chapter + diagram numbering to `01`.
+**Imperative limitation:** `kubectl create cronjob` produces a **single-container** pod and gives you **no flag for `completions` or `parallelism`**. If the question asks for those, scaffold with `$do`, then hand-edit `spec.jobTemplate.spec` to add `completions:`/`parallelism:`, validate with `--dry-run=client`, then apply.

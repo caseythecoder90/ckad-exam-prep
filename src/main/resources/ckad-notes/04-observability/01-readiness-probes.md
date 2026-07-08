@@ -1,21 +1,14 @@
 # Pod Status, Conditions, and Readiness Probes
 
-> **Section:** 04-observability
-> **Course chapter:** 1 (Readiness and Liveness Probes - readiness portion)
-> **Why this is in CKAD:** Probes are core, heavily-tested, and directly practical. You must be able to add a `readinessProbe` (httpGet/tcpSocket/exec) to a container, tune its timing fields, and reason about how the Ready condition gates Service traffic. Reading pod status and `kubectl describe` conditions is standard debugging.
-> **Companion files:** `../03-multi-container-pods/03-init-containers.md` (the `Initialized` condition flips True when init containers complete); liveness probes to follow in `02` of this section
-
----
-
 ## 1. Pod status (phase) - where the pod is in its lifecycle
 
-A pod's status tells you where it is in its lifecycle. The instructor's progression:
+A pod's status tells you where it is in its lifecycle:
 
 - **Pending** - the scheduler is finding a node to place the pod on. The pod sits here until it is scheduled.
 - **ContainerCreating** - once scheduled, images are pulled and containers are started.
 - **Running** - all containers have started; the pod stays here until the program completes or is terminated.
 
-Precision beyond the lecture (mine): the actual `pod.status.phase` field has only five values - `Pending`, `Running`, `Succeeded`, `Failed`, `Unknown`. `ContainerCreating` is **not** a phase; it is the reason shown in the `STATUS` column of `kubectl get pods`, derived from a container's "waiting" state. While images pull, the phase is still `Pending`. `Succeeded`/`Failed` matter for run-to-completion pods (Jobs). So: the instructor's three "statuses" are really `Pending` (covering both scheduling and image pull) -> `Running`, with `ContainerCreating` being the human-readable reason in between.
+Precision: the actual `pod.status.phase` field has only five values - `Pending`, `Running`, `Succeeded`, `Failed`, `Unknown`. `ContainerCreating` is **not** a phase; it is the reason shown in the `STATUS` column of `kubectl get pods`, derived from a container's "waiting" state. While images pull, the phase is still `Pending`. `Succeeded`/`Failed` matter for run-to-completion pods (Jobs). So the three "statuses" are really `Pending` (covering both scheduling and image pull) -> `Running`, with `ContainerCreating` being the human-readable reason in between.
 
 ## 2. Pod conditions - complementing status
 
@@ -39,7 +32,7 @@ This lecture focuses on the **`Ready`** condition.
 
 `Ready` is meant to signal that the application inside the pod is up and able to accept user traffic. The catch: **by default, Kubernetes considers a container ready the moment its process starts** - it has no insight into whether the app inside has finished warming up.
 
-The instructor's example is a Jenkins server that takes a while to warm up. The container process is running, so the pod reports `Ready`, yet the Jenkins UI cannot actually serve a user for another 10-15 seconds. The status says ready; the reality says no.
+Example: a Jenkins server that takes a while to warm up. The container process is running, so the pod reports `Ready`, yet the Jenkins UI cannot actually serve a user for another 10-15 seconds. The status says ready; the reality says no.
 
 Why this bites you: you deploy the app in a pod and put a **Service** in front to route user traffic to it. The Service routes based on the pod's `Ready` condition, and it will start routing the instant the pod reports ready. If the app is not truly ready, the Service sends real user requests to a pod that errors out.
 
@@ -47,7 +40,7 @@ Why this bites you: you deploy the app in a pod and put a **Service** in front t
 
 Developers know when their app is actually ready - so you define a test (a **probe**) that Kubernetes runs against the container. Until the probe passes, the container is held **not ready**, so `Ready` stays `False` and the Service does not route to it.
 
-Three probe mechanisms (instructor's slide):
+Three probe mechanisms:
 
 | Type | Field | Use case | Passes when |
 |---|---|---|---|
@@ -55,7 +48,7 @@ Three probe mechanisms (instructor's slide):
 | TCP | `tcpSocket` (`port`) | databases, brokers | a TCP connection can be opened |
 | Exec | `exec` (`command`) | anything scriptable | the command exits `0` |
 
-### HTTP probe (mirrors the slide)
+### HTTP probe
 
 ```yaml
 apiVersion: v1
@@ -94,7 +87,7 @@ spec:
 
 ## 5. Tuning the probe
 
-The instructor's HTTP example adds timing fields. These control how patient and how strict the probe is:
+Timing fields control how patient and how strict the probe is:
 
 ```yaml
     readinessProbe:
@@ -106,7 +99,7 @@ The instructor's HTTP example adds timing fields. These control how patient and 
       failureThreshold: 8          # this many consecutive fails before giving up
 ```
 
-Full field set and defaults (depth beyond the lecture):
+Full field set and defaults:
 
 | Field | Meaning | Default |
 |---|---|---|
@@ -120,7 +113,7 @@ Full field set and defaults (depth beyond the lecture):
 
 ## 6. How a Service actually uses readiness
 
-This is the mechanism worth internalizing, especially if you are already running probes at work:
+The mechanism worth internalizing:
 
 - A pod's IP is added to the Service's **Endpoints/EndpointSlice only while the pod is `Ready`**. Not ready -> not in endpoints -> receives no traffic.
 - A failing readiness probe **removes a running pod from the Service endpoints**; it does **not** restart the container. (Restarting on failure is what a *liveness* probe does - that distinction is the single most common probe mix-up, and it is the next file.)
@@ -131,7 +124,7 @@ This is the mechanism worth internalizing, especially if you are already running
 ## 7. Exam-pattern gotchas
 
 - **Readiness failure does not restart anything.** It only pulls the pod out of Service endpoints. If your task says "the container should be restarted when unhealthy," that is a *liveness* probe, not readiness.
-- **`exec.command` is a YAML list**, not a string - same rule that has bitten you on init containers and the sidecar lab.
+- **`exec.command` is a YAML list**, not a string - same rule as init containers and the sidecar lab.
 - **`port` can be a number or a named port** (a `name:` you defined under `ports:`). Both are valid.
 - **No probe = optimistically ready.** A container with no readiness probe is considered ready as soon as it starts - which is exactly the premature-traffic problem from section 3.
 - **Probe lives at the container level**, under each entry in `spec.containers`, not at the pod level. In a multi-container pod each container can have its own probe, and **all** containers must be ready for `ContainersReady`/`Ready` to be `True`.
@@ -157,18 +150,3 @@ kubectl explain pod.spec.containers.readinessProbe.httpGet
 kubectl get pod simple-webapp                                # READY column: 0/1 vs 1/1
 kubectl describe pod simple-webapp                           # Conditions + probe failure events
 ```
-
-## 9. TL;DR / takeaways
-
-- Pod **phase** (`Pending` -> `Running`, plus `Succeeded`/`Failed`) says where the pod is; **conditions** (`PodScheduled`, `Initialized`, `ContainersReady`, `Ready`) add boolean detail. See them with `kubectl describe pod`.
-- By default a container is "ready" the instant it starts, so the `Ready` condition can lie (the Jenkins warmup case). A **readiness probe** defines a real test so `Ready` reflects the app.
-- Three probe types: **httpGet** (200-399), **tcpSocket** (connection opens), **exec** (exit 0).
-- A Service routes only to **`Ready`** pods (endpoint membership); a failing readiness probe removes a pod from rotation but does **not** restart it.
-- Tune with `initialDelaySeconds` (slow starters), `periodSeconds`, `failureThreshold`; `exec.command` is a list; the probe sits at the container level.
-
----
-
-### Open threads
-- [ ] **Liveness probes** - next file (`02-liveness-probes.md`): same probe mechanisms, but failure **restarts** the container. Contrast with readiness throughout.
-- [ ] **Startup probes** - likely same lecture/next; they gate liveness for slow-starting apps. Add when covered.
-- [ ] Tie the `Ready` -> Service endpoints mechanism into the upcoming **Services & Networking** section when reached.

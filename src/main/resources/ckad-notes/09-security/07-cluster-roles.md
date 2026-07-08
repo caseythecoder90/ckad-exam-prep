@@ -81,7 +81,7 @@ kubectl create clusterrole cluster-administrator \
   --verb=list,get,create,delete
 ```
 
-### Concrete examples from the lecture
+### Concrete examples
 
 **Cluster Admin** – manages nodes:
 - `list`, `get`, `create`, `delete` on `nodes`
@@ -131,8 +131,6 @@ binding the ClusterRole is just a definition sitting there doing nothing.
 ---
 
 ## 4. The dual-use twist: ClusterRole bound at namespace scope
-
-The instructor surfaces a subtle but important point:
 
 > **You can bind a ClusterRole with a namespaced RoleBinding.**
 
@@ -246,55 +244,10 @@ a ClusterRole or Role resource?" on the exam without memorizing the full list.
 
 ---
 
-## 8. JPMC context
+## 8. Notes
 
-At JPMC, the platform team almost certainly uses ClusterRoles extensively.
-A few patterns you've probably brushed up against:
-
-- **SEAL ID namespace scoping**: Your team's RBAC is delivered via a
-  `RoleBinding` in your SEAL namespace, but the underlying `ClusterRole`
-  definition is managed centrally by the platform org.  This is exactly the
-  "ClusterRole bound by RoleBinding" pattern from section 4 above.
-- **Node visibility**: `kubectl get nodes` works for you because your OIDC
-  group probably has a read-only ClusterRoleBinding for node listing – not
-  because you have cluster-admin.
-- **PV access**: CockroachDB StatefulSets rely on PVs.  The controller
-  managing those PVs (or whoever provisions them) has ClusterRole access to
-  `persistentvolumes`.  Your team likely only has PVC access within the SEAL
-  namespace via a namespaced Role.
-- **`klogin` flow**: When `klogin <cluster>` exchanges your Kerberos/ADFS
-  token for a JWT, the JWT carries group memberships that Kubernetes resolves
-  against ClusterRoleBindings and RoleBindings at admission time.
-
----
-
-## 9. TL;DR
-
-- Cluster-scoped resources (nodes, PVs, namespaces, clusterroles, CSRs)
-  cannot live in a namespace – they need `ClusterRole` + `ClusterRoleBinding`.
-- `ClusterRole` YAML is identical to `Role` except `kind: ClusterRole` and
-  no namespace in metadata.
-- `ClusterRoleBinding` is identical to `RoleBinding` except both the binding
-  and its `roleRef` use the `ClusterRole` kind.
-- You can bind a `ClusterRole` with a namespaced `RoleBinding` to reuse a
-  permission set scoped to one namespace.
-- `kubectl api-resources --namespaced=false` is your friend on the exam for
-  identifying cluster-scoped resources.
-- After any binding, validate with `kubectl auth can-i ... --as=<user>`.
-
----
-
-## Open threads
-
-- [ ] **ServiceAccounts as subjects**: ClusterRoleBinding subjects can be
-  ServiceAccounts (`kind: ServiceAccount`), not just Users and Groups.
-  Dedicated SA chapter expected; revisit this binding pattern there.
-- [ ] **Built-in ClusterRoles** (`cluster-admin`, `admin`, `edit`, `view`):
-  briefly surfaced in ch06; CKA digs into these further.  For CKAD: know that
-  `cluster-admin` is the highest privilege ClusterRole and should be bound
+- ClusterRoleBinding subjects can be ServiceAccounts (`kind: ServiceAccount`),
+  not just Users and Groups.
+- Built-in ClusterRoles (`cluster-admin`, `admin`, `edit`, `view`) exist;
+  `cluster-admin` is the highest-privilege ClusterRole and should be bound
   with extreme care.
-
-## Resolved threads (from ch06)
-
-- [x] **ClusterRole + RoleBinding (namespace-scoped) vs ClusterRoleBinding
-  (cluster-wide)**: fully covered in section 4 and 5 of this chapter.

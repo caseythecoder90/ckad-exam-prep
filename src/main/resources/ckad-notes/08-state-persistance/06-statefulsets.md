@@ -4,7 +4,6 @@ chapter: 06
 title: StatefulSets
 course: CKAD — Mumshad Mannambeth (KodeKloud/Udemy)
 examinable: YES — StatefulSet spec, ordered startup, stable naming
-depth_note: Extra depth added — Casey needs this for CockroachDB at JPMC
 companion_diagrams:
   - diagrams/12-deployment-vs-statefulset.png
   - diagrams/13-statefulset-lifecycle.png
@@ -225,7 +224,7 @@ All pods created (or deleted) simultaneously. No waiting. No ordering. This is t
 - **Cassandra** — uses gossip for cluster membership
 - **ZooKeeper** — requires a majority quorum, but each node boots independently
 
-**At JPMC:** your CockroachDB StatefulSet very likely uses `Parallel` (or it's the default based on your Helm chart). CockroachDB nodes don't have master/slave roles — every node is a peer. Sequential startup would just slow down deployments unnecessarily.
+A CockroachDB StatefulSet typically uses `Parallel`: nodes don't have master/slave roles — every node is a peer. Sequential startup would just slow down deployments unnecessarily.
 
 > **Important detail:** `podManagementPolicy: Parallel` affects *creation* and *scaling*. Scale-down termination is still reverse-ordinal even with `Parallel`. The final pod is always deleted last.
 
@@ -302,19 +301,17 @@ No automatic rollout. Pods are only updated when you manually delete them (and t
 
 ---
 
-## JPMC Context — CockroachDB
+## Example — CockroachDB
 
-Your team runs CockroachDB, which is deployed as a StatefulSet in virtually every Kubernetes environment. Key points:
+CockroachDB is deployed as a StatefulSet in virtually every Kubernetes environment. Key points:
 
-**CockroachDB node identity:** each CRDB node has a stable node ID that maps to its pod name. If `cockroachdb-2` is rescheduled to a different node, it rejoins the cluster as node `cockroachdb-2` with the same store. This is the sticky identity guarantee — without StatefulSets, CRDB would see it as a brand-new node, rebalancing all ranges onto it.
+**Node identity:** each CRDB node has a stable node ID that maps to its pod name. If `cockroachdb-2` is rescheduled to a different node, it rejoins the cluster as node `cockroachdb-2` with the same store. This is the sticky identity guarantee — without StatefulSets, CRDB would see it as a brand-new node, rebalancing all ranges onto it.
 
 **No master/slave in CRDB:** unlike MySQL, CockroachDB doesn't have a designated master. All nodes are peers that coordinate via Raft consensus. This means `podManagementPolicy: Parallel` is appropriate — you don't need ordered bootstrap.
 
-**`--join` flag:** CRDB nodes discover each other using `--join <stable-dns-of-other-nodes>`. The stable DNS comes from the headless service + ordinal names. This is exactly the headless service pattern covered in the next chapter.
+**`--join` flag:** CRDB nodes discover each other using `--join <stable-dns-of-other-nodes>`. The stable DNS comes from the headless service + ordinal names — the headless service pattern covered in the next chapter.
 
 **`kubectl delete pod cockroachdb-1`:** in a healthy CRDB cluster, deleting a pod is a routine operation (rolling restarts for upgrades). The pod comes back as `cockroachdb-1` with the same store files, rejoins the cluster, and resumes. This only works because of StatefulSet's sticky identity.
-
-**The StatefulSet you already work with:** when you run `kubectl get pods` on your CRDB namespace, the pods are named with ordinals. When you add capacity, a new pod comes up with the next ordinal. When JPMC's platform team scales down, the highest ordinal is removed first. All of this is StatefulSet mechanics.
 
 ---
 
@@ -380,23 +377,3 @@ kubectl delete pvc -l app=mysql
 - **OrderedReady + failing readiness probe = stuck StatefulSet.** If `mysql-1`'s readiness probe fails, `mysql-2` will never be created. The controller waits indefinitely. Debug with `kubectl describe pod mysql-1` and check probe failure events.
 - **`kubectl rollout restart sts` updates in reverse ordinal.** The highest-numbered pod restarts first, working down to 0. Same order as updates.
 - **StatefulSet pods aren't deleted during node failures by default.** The pod on a failed node shows as `Terminating` indefinitely (Kubernetes waits for the node to come back). For databases where another copy of the data is safe, you can force-delete: `kubectl delete pod mysql-1 --force --grace-period=0`.
-
----
-
-## TL;DR
-
-Deployments can't run stateful workloads that need ordered startup, stable identity, or per-replica storage. StatefulSets provide all three: pods are named `<name>-<ordinal>` (not random), created sequentially in order (each waiting for Running+Ready), deleted in reverse order, and their names + PVC bindings survive crashes. `podManagementPolicy: Parallel` removes the ordering constraint for peer-topology databases like CockroachDB. Update rollouts go in reverse-ordinal order; `partition` enables canary updates to a subset of pods. Everything at JPMC with CockroachDB runs on these mechanics.
-
----
-
-## Resolved Threads
-
-- **StatefulSet + `volumeClaimTemplates`** — now introduced here; per-pod PVC creation and lifecycle covered in ch08.
-
-## Open Threads
-
-- [ ] **Headless Services** — the stable DNS mechanism that makes `mysql-0.mysql.default.svc.cluster.local` resolve to the right pod; required reading for understanding how slaves find the master (ch07)
-- [ ] **volumeClaimTemplates deep dive** — how per-pod PVCs are named, when they're deleted vs retained, and how StatefulSet scale-down interacts with PVC lifecycle (ch08)
-- [ ] **`kubectl delete pod --force --grace-period=0`** — when to use this and the risk of split-brain in distributed databases (node not actually dead, pod force-deleted, now two processes think they own the same data)
-- [ ] **StatefulSet + update strategy for CockroachDB at JPMC** — what partition value and strategy the platform team uses; worth checking with `kubectl describe sts <crdb-sts>` when you're at a terminal
-- [ ] **Init containers for StatefulSets** — common pattern for cloning data on first startup (MySQL clone init container); covered in the multi-container pods section but worth revisiting in this context

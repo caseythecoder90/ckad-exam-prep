@@ -68,10 +68,10 @@ Managing them individually becomes untenable.
 ## 2. Helm — the package manager for Kubernetes
 
 Helm treats all the Kubernetes objects that make up an application as a
-single **package** (called a **chart**). The analogy the instructor uses:
-installing a video game. The game consists of thousands of files (executables,
-audio, graphics, configs), but you don't place each file manually — you run
-an installer that handles everything. Helm is that installer for Kubernetes.
+single **package** (called a **chart**). Analogy: installing a video game.
+The game consists of thousands of files (executables, audio, graphics,
+configs), but you don't place each file manually — you run an installer that
+handles everything. Helm is that installer for Kubernetes.
 
 ### What Helm provides
 
@@ -241,8 +241,7 @@ helm version
 
 - **macOS**: `brew install helm`
 - **Windows**: `choco install kubernetes-helm` or `scoop install helm`
-- **WSL2** (your ThinkPad): use the Linux instructions above inside your
-  Ubuntu WSL2 environment
+- **WSL2**: use the Linux instructions above inside your Ubuntu WSL2 environment
 
 ### On the CKAD exam
 
@@ -299,63 +298,3 @@ Use `--all-namespaces` or `-A` to see everything.
 **Gotcha 5 – `helm uninstall` removes everything**
 Unlike `kubectl delete -f`, `helm uninstall` knows every object the
 release created and removes them all. Clean teardown.
-
----
-
-## 8. JPMC context
-
-Helm is almost certainly part of your deployment pipeline at JPMC, even
-if you interact with it indirectly:
-
-- **Spring Boot deployments**: your team's CI/CD pipeline likely uses a
-  Helm chart to deploy your microservices. The chart templates the
-  Deployment, Service, ConfigMap, and Ingress/HTTPProxy manifests. Values
-  like image tag, replica count, and resource limits are injected per
-  environment (dev, staging, prod) via different `values.yaml` files or
-  `--set` overrides.
-
-- **Operator installation**: CockroachDB, Calico, Contour — these
-  operators were likely installed into the cluster via Helm charts by the
-  platform team. `helm install cockroachdb ...` sets up the CRDs,
-  controller, and RBAC in one shot.
-
-- **Why you don't run `helm install` directly**: at JPMC, Helm commands
-  are typically executed by the CI/CD pipeline (Jenkins, ArgoCD, or an
-  internal tool), not by developers on their laptops. Your interaction is
-  with the `values.yaml` file in your repo — you change values, push to
-  Git, and the pipeline runs `helm upgrade` for you.
-
-- **Rollbacks**: when a deployment goes bad, the pipeline (or an on-call
-  engineer) can `helm rollback <release> <revision>` to revert all objects
-  to their previous state — much faster than manually reverting five YAML
-  files and re-applying.
-
----
-
-## 9. TL;DR
-
-- Helm is a package manager for Kubernetes. It treats all objects in an
-  application as a single **chart** and manages them through a unified
-  lifecycle: install, upgrade, rollback, uninstall.
-- A **chart** is a directory of templatized YAML manifests + `values.yaml`
-  defaults + metadata.
-- **values.yaml** is the single customization point — override with
-  `--set` or `-f` at install/upgrade time.
-- A **release** is a running instance of a chart, tracked with revision
-  history for rollback.
-- Key commands: `helm install`, `helm upgrade`, `helm rollback`,
-  `helm uninstall`, `helm list`, `helm search`, `helm repo add`.
-- Helm and operators are complementary — operators are often installed
-  via Helm charts.
-- Helm is available on the CKAD exam. Know the basic commands.
-
----
-
-## Open threads
-
-- [ ] **Helm chart structure** (if covered in next lectures): `Chart.yaml`,
-  `templates/` directory, Go template syntax, helper functions.
-- [ ] **Helm repositories**: Artifact Hub, adding/updating repos, chart
-  versioning.
-- [ ] **Helm on the exam**: specific exam scenarios and which commands to
-  use.

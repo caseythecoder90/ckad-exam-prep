@@ -1,24 +1,17 @@
 # Node Affinity vs Taints and Tolerations
 
-> **Section:** 02-configuration
-> **Course chapter:** 13 (Node Affinity vs Taints and Tolerations)
-> **Why this is in CKAD:** This is the synthesis lecture — it doesn't add
-> new syntax, it shows how the three previous mechanisms combine. The
-> exam loves "dedicate these nodes to these pods and nothing else" — that
-> question needs the combination, and getting it right means knowing why
-> one tool alone fails.
-> **Companion files:** `10-taints-and-tolerations.md` (repel),
-> `11-node-selectors.md` (simple attract), `12-node-affinity.md`
-> (expressive attract). This chapter is where the open threads from all
-> three close.
+This is the synthesis chapter — no new syntax, it shows how the three
+previous mechanisms combine. The exam loves "dedicate these nodes to
+these pods and nothing else"; that question needs the combination, and
+getting it right means knowing why one tool alone fails.
 
 ---
 
 ## 1. The exercise
 
-The instructor sets up a concrete problem. Three colored pods (blue,
-red, green/orange in the slides — colors vary), three matching colored
-nodes, and a cluster that also contains **other pods and other nodes**.
+A concrete problem: three colored pods (blue, red, green), three matching
+colored nodes, and a cluster that also contains **other pods and other
+nodes**.
 
 Two requirements, and both must hold:
 
@@ -53,10 +46,9 @@ can't get onto our nodes.
 **What fails:** a toleration is *permission, not attraction* (the core
 point from chapter 10 §4). The blue pod tolerates the blue taint — but
 nothing *steers* it to the blue node. The scheduler is free to place it
-on any **untainted** node elsewhere in the cluster. In the instructor's
-run, two pods happened to land correctly, but one escaped onto a
-different node. Taints don't pin pods down; they only push the wrong
-pods away.
+on any **untainted** node elsewhere in the cluster; a tolerating pod can
+land on the wrong node. Taints don't pin pods down; they only push the
+wrong pods away.
 
 > **Result: our pods can wander off.** Taints solve "keep others out" but
 > not "keep ours in."
@@ -94,9 +86,6 @@ must go; it says nothing about keeping *other* pods away.
 ---
 
 ## 4. The key insight: the two requirements pull opposite ways
-
-This is the part the instructor said wasn't clicking, so here it is
-stated as plainly as possible:
 
 The problem has **two independent halves**, and each tool only covers one:
 
@@ -192,10 +181,10 @@ Lock + key + address = our pod goes there, and only our pod can.
 
 ## 6. Order of operations
 
-The instructor stressed: **taints/labels on nodes first, then deploy the
-pods.** The reason is the same as the nodeSelector ordering trap (chapter
-11 §3) — affinity and tolerations are evaluated at scheduling time, so
-the node-side setup has to exist before the scheduler places the pod.
+**Taints/labels on nodes first, then deploy the pods.** The reason is the
+same as the nodeSelector ordering trap (chapter 11 §3) — affinity and
+tolerations are evaluated at scheduling time, so the node-side setup has
+to exist before the scheduler places the pod.
 
 1. Label the nodes (for affinity).
 2. Taint the nodes (to repel others).
@@ -226,8 +215,7 @@ pods only" is both.
 
 ## 8. The control-plane node — a real example of "both"
 
-You've already seen this combination in the wild (and in a recent lab):
-the control-plane node ships with **both** a taint and a label.
+The control-plane node ships with **both** a taint and a label.
 
 - Taint: `node-role.kubernetes.io/control-plane:NoSchedule` — repels
   regular workloads.
@@ -257,39 +245,3 @@ affinity (to attract it). Exactly the pattern from §5, already set up by
 - **Order:** node setup (label + taint) before pod deployment.
 - **`effect` must match** between taint and toleration; `values`/`value`
   must match between label and affinity/toleration.
-
----
-
-## 10. TL;DR / takeaways
-
-1. The "dedicated node" problem has **two halves**: keep others OUT
-   (repel) and keep ours IN (attract). They pull in opposite directions.
-2. **Taints alone** keep others out but let our pods wander off.
-3. **Affinity alone** pins our pods but lets strangers wander in.
-4. **Use both** for a truly dedicated node: taint the node (+ toleration
-   on the pod) to repel others, label the node (+ affinity on the pod) to
-   attract ours.
-5. Each colored pod ends up with **both** a toleration and a node
-   affinity.
-6. **Order:** label + taint nodes first, then deploy pods.
-7. **Taint = lock; toleration = key; affinity = address.**
-8. Match the tool to the requirement: affinity-only, taint-only, or both
-   — driven by whether the question needs one direction or both.
-9. The control-plane node is a built-in example of the "both" pattern.
-
-### Resolved threads
-- [x] **The "dedicate a node" pattern** — open since
-      `10-taints-and-tolerations.md` §4 and `11-node-selectors.md` §8.
-      Fully closed here: taint (repel) + affinity (attract) = dedicated
-      node, with the why-each-alone-fails reasoning made explicit.
-- [x] **Combining affinity with taints** — open from
-      `12-node-affinity.md`. Covered in §5–§8.
-
-### Open threads
-- [ ] **Pod affinity / anti-affinity** — the *pod-to-pod* version of this
-      idea (co-locate or spread pods relative to other pods, via
-      `topologyKey`). Still upcoming; same attract/repel thinking applied
-      to pods instead of nodes.
-- [ ] **DaemonSets** — run a pod on every node (or every node matching a
-      selector). Relevant because DaemonSet pods often carry broad
-      tolerations to land on tainted nodes too. Later.

@@ -1,12 +1,12 @@
 # 09 — Services (ClusterIP)
 
-> ClusterIP is the default Service type, and the one you'll actually use most in production. Where NodePort exposed pods to the outside world, ClusterIP is for **pods talking to other pods**. This is the network glue that makes microservice architectures actually work.
+ClusterIP is the default Service type, and the one you'll actually use most in production. Where NodePort exposed pods to the outside world, ClusterIP is for **pods talking to other pods**. This is the network glue that makes microservice architectures actually work.
 
 ---
 
 ## 1. The problem — the chaos of pod-to-pod direct connections
 
-The instructor sets this up with a classic three-tier app: front-end pods talk to back-end pods, back-end pods talk to a redis key-value store. What's the right way to connect these tiers?
+Take a classic three-tier app: front-end pods talk to back-end pods, back-end pods talk to a redis key-value store. What's the right way to connect these tiers?
 
 The naive approach — frontend pods hardcoding backend pod IPs — falls apart immediately:
 
@@ -19,7 +19,7 @@ What goes wrong:
 - **Tight coupling.** Every frontend pod needs to know every backend pod's IP. Scaling means updating configs everywhere.
 - **No fault tolerance.** A pod dies, every caller pointed at it breaks.
 
-This is the real-world pain you experienced at Visa with IP whitelisting. Teams asking "what IP will you be connecting from?" and you having to negotiate a range because you couldn't give them a single stable IP. ClusterIP solves the *internal* version of that problem — pods inside the cluster get a stable name to reach a tier, regardless of which specific pod actually handles the request.
+This is the same class of pain as IP whitelisting between systems — being unable to give a single stable IP for callers to target. ClusterIP solves the *internal* version of that problem: pods inside the cluster get a stable name to reach a tier, regardless of which specific pod actually handles the request.
 
 ---
 
@@ -282,24 +282,3 @@ kubectl run test --image=busybox --rm -it --restart=Never -- wget -O- <service-n
 # Delete
 kubectl delete service <name>
 ```
-
----
-
-## Quick recall checklist
-
-- [ ] What problem does ClusterIP solve that NodePort doesn't?
-- [ ] What's the default Service type if you don't specify `type:`?
-- [ ] What two things does Kubernetes automatically create when you make a ClusterIP service (besides the service object itself)?
-- [ ] What's the FQDN format a pod in namespace A would use to reach a service in namespace B?
-- [ ] Why doesn't a ClusterIP service have a `nodePort` field?
-- [ ] What's the difference between `port` and `targetPort`?
-- [ ] If `kubectl get endpoints my-service` shows `<none>`, what's wrong and how do you fix it?
-- [ ] How would you test a ClusterIP service from your terminal (without exposing it externally)?
-- [ ] What two ways could a pod reach a ClusterIP service — by what?
-- [ ] Is a NodePort service ALSO a ClusterIP service?
-
----
-
-## Notes for next chapters
-
-Up next: **LoadBalancer Service type** (the third type), or in some course orderings, **Ingress** (a layer-7 HTTP router that sits in front of services and is what production apps actually use for external traffic). After Services, the curriculum typically moves into application lifecycle concerns — configmaps, secrets, multi-container patterns, observability — the day-to-day stuff that fills the CKAD exam.

@@ -321,8 +321,8 @@ Kubernetes cluster
 
 ## 6. The Java angle — writing a webhook server in Spring Boot
 
-Since you asked: here's the structure you'd use. The JSON contract is all
-that matters; the language is irrelevant to Kubernetes.
+The JSON contract is all that matters; the language is irrelevant to
+Kubernetes. Structure of a Spring Boot implementation:
 
 ```java
 // AdmissionReview POJO (simplified)
@@ -413,9 +413,7 @@ volumeMounts:
     readOnly: true
 ```
 
-This is a meaningful bridge to the Go learning goal: the webhook contract is
-identical regardless of server language. Implement it in Spring Boot first to
-understand the flow, then read the Go reference implementation to compare.
+The webhook contract is identical regardless of server language.
 
 ---
 
@@ -458,72 +456,3 @@ be present on every webhook. Missing them causes the
 admissionReviewVersions: ["v1"]
 sideEffects: None
 ```
-
----
-
-## 8. JPMC context
-
-JPMC's platform almost certainly runs OPA Gatekeeper or a similar webhook-
-based policy engine. Gatekeeper is implemented on top of
-`ValidatingAdmissionWebhook` and exposes policy via CRDs (ConstraintTemplates
-+ Constraints) rather than requiring you to write raw webhook server code.
-
-When you try to deploy a pod with `ubuntu:latest` and get a rejection like
-"image must be pulled from internal registry", you're hitting a
-`ValidatingAdmissionWebhook` backed by something like Gatekeeper or an
-in-house policy server.
-
-The `AdmissionReview` object flowing between apiserver and that policy
-server looks exactly like what's in this chapter. The internal policy server
-is almost certainly doing the same inspect-and-allow/deny logic, just at
-enterprise scale and written against JPMC's internal image registry allow-list.
-
-When you write your Spring Boot webhook server: the TLS certificate mount
-pattern above is exactly how your existing Spring Boot deployments handle
-secrets at JPMC. The muscle memory already exists.
-
----
-
-## 9. TL;DR
-
-- **Mutating controllers** change the object; **validating controllers**
-  allow/deny it. Mutating always runs first.
-- Built-in controllers are compiled into kube-apiserver. To add custom
-  logic you use `MutatingAdmissionWebhook` and/or
-  `ValidatingAdmissionWebhook`.
-- The webhook call is a JSON HTTP POST: kube-apiserver sends an
-  `AdmissionReview` request; your server returns an `AdmissionReview`
-  response with `allowed: true/false` and, for mutations, a base64
-  JSONPatch.
-- Setup is two steps: (1) deploy the webhook server (Deployment + Service
-  inside the cluster, or an external URL), (2) create a
-  `ValidatingWebhookConfiguration` or `MutatingWebhookConfiguration`
-  pointing to it.
-- The `rules` field in the WebhookConfiguration controls which operations
-  and resources trigger the call — scope it tightly.
-- `failurePolicy: Fail` is the safe default for security webhooks.
-- `uid` must be echoed; `patch` must be base64; TLS is required; both
-  `admissionReviewVersions` and `sideEffects` are required fields.
-
----
-
-## Open threads
-
-- [ ] **OPA Gatekeeper** (CKS scope): the production-scale policy engine
-  built on `ValidatingAdmissionWebhook`. Uses Rego policy language +
-  CRDs. Worth flagging for CKS study; you likely interact with it at JPMC.
-- [ ] **Pod Security Admission** (PSA): replaced PodSecurityPolicy in 1.25.
-  Operates as a built-in admission controller (not a webhook) enforcing
-  `restricted`, `baseline`, `privileged` profiles at namespace level. CKS
-  territory.
-- [ ] **JSONPatch (RFC 6902)**: four operations —  `add`, `remove`,
-  `replace`, `move`. `path` follows JSON Pointer syntax (RFC 6901).
-  Worth a quick read alongside the Go chapter of learning since the Go
-  standard library handles this natively.
-
-## Resolved threads (from ch08)
-
-- [x] **Mutating vs validating phases and ordering**: fully covered in
-  sections 1 and 3 of this chapter.
-- [x] **MutatingAdmissionWebhook + ValidatingAdmissionWebhook mechanism**:
-  covered end-to-end in sections 2–5.

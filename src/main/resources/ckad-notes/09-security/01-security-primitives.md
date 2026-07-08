@@ -13,7 +13,7 @@ companion_diagrams:
 
 ## What This Section Is
 
-This lecture is a map. It names every security surface in a Kubernetes cluster, clusters them into categories, and signals what's coming. Each mechanism shown here gets its own lecture later. These notes go deeper on each mechanism than the intro did — you asked for it, and the mental model will make the detailed lectures land faster.
+This is a map of every security surface in a Kubernetes cluster, clustered into categories. Each mechanism shown here gets its own dedicated chapter later.
 
 ![Kubernetes Security Primitives — The Layered Model](diagrams/01-kubernetes-security-primitives.png)
 
@@ -72,18 +72,18 @@ Delegate authentication to an external identity system.
 
 **LDAP:** Older enterprise directory protocol. Usually implemented via an authenticating proxy (like Dex) that speaks OIDC to Kubernetes and LDAP to the directory, rather than LDAP directly to Kubernetes.
 
-### `klogin <cluster>` at JPMC
+### Enterprise auth tools (e.g. `klogin`)
 
-`klogin` is JPMC's internal tool for authenticating to a cluster. Based on the enterprise pattern, it almost certainly does:
+An enterprise auth tool typically:
 
-1. Initiates authentication against JPMC's identity provider (likely Azure AD or an internal SSO system)
+1. Initiates authentication against the identity provider (Azure AD or internal SSO)
 2. Gets a short-lived token or client certificate
 3. Writes credentials to `~/.kube/config` (`users[].user.token` or cert fields)
 4. Sets the current context to the target cluster
 
-This is **Authentication** in Kubernetes terms — specifically External Authentication Provider (OIDC) or certificate issuance. After `klogin`, every `kubectl` command you run presents those credentials to the API server, which validates them before doing anything.
+This is **Authentication** — specifically External Authentication Provider (OIDC) or certificate issuance. Afterwards, every `kubectl` command presents those credentials to the API server, which validates them before doing anything.
 
-Your limited permissions at work come from the **Authorization** layer (RBAC), not authentication. Authentication just proves who you are; RBAC decides what you're allowed to do as that identity.
+Limited permissions come from the **Authorization** layer (RBAC), not authentication. Authentication just proves who you are; RBAC decides what you're allowed to do as that identity.
 
 ### Service Accounts
 
@@ -149,7 +149,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 ```
 
-Your limited operations at JPMC are RBAC in action. The platform team created a Role (or ClusterRole) with a specific set of verbs and resources, bound it to your user or an AD group you're in. When you run `kubectl delete pod` and it's denied, the API server ran the RBAC check: "Does user `casey` have the `delete` verb on `pods` in namespace `700515d201053-caas-dev`?" — and got no.
+Limited operations are RBAC in action. A platform team creates a Role (or ClusterRole) with a specific set of verbs and resources, bound to your user or a group you're in. When you run `kubectl delete pod` and it's denied, the API server ran the RBAC check: "Does this user have the `delete` verb on `pods` in this namespace?" — and got no.
 
 ### ABAC — Attribute-Based Access Control (effectively deprecated)
 
@@ -224,9 +224,9 @@ Without any NetworkPolicy, all traffic is allowed. When a NetworkPolicy selects 
 
 **Critical:** NetworkPolicies are only enforced by CNI plugins that support them: **Calico**, Cilium, Weave. **Flannel does not** enforce NetworkPolicies — you can apply them but they have no effect. kube-proxy is not involved.
 
-### JPMC: default-deny model
+### Default-deny model (enterprise pattern)
 
-Your observation is correct — JPMC does the opposite of the cluster default. The platform team (using Calico) applies default-deny NetworkPolicies to all namespaces. Your team then writes explicit allow policies for the traffic you need.
+Security-hardened clusters do the opposite of the cluster default: a platform team (using Calico) applies default-deny NetworkPolicies to all namespaces, and each team writes explicit allow policies for the traffic they need.
 
 This is the security-correct approach. Default-deny means: if you haven't explicitly said this traffic is allowed, it's blocked. It forces teams to reason about what their services actually need to communicate with, which reduces blast radius when something is compromised. Calico also supports DNS-based egress policies (e.g., allow pods to call `api.external.com`) which standard Kubernetes NetworkPolicy doesn't support.
 
@@ -243,21 +243,3 @@ This lecture is the topology. Here's what each upcoming chapter addresses:
 | Service Accounts (ch04) | Creating SAs, mounting tokens, automounting |
 | TLS (ch05) | Certificate mechanics, CA, cert signing requests |
 | Network Policies (ch06) | Writing policies, ingress/egress rules, deny-all patterns |
-
----
-
-## TL;DR
-
-Kubernetes security is layered: secure the hosts first (SSH keys, no root), then secure the API server (authentication + authorization), then the components talk to each other via TLS, then pod-to-pod traffic is controlled by NetworkPolicies. Authentication answers "who are you?" (certificates, OIDC/LDAP, service accounts). Authorization answers "what can you do?" (RBAC is the standard; ABAC is deprecated; Node auth protects kubelets; Webhook delegates to external services). The vanilla cluster default allows all pod communication — production clusters invert this with default-deny NetworkPolicies. Your `klogin <cluster>` is the Authentication step; your limited kubectl permissions are the RBAC Authorization step.
-
----
-
-## Open Threads
-
-- [ ] Certificate mechanics in depth — how certs are issued, CA, CSR (Certificate Signing Request), kubeconfig file structure (ch02)
-- [ ] RBAC deep dive — writing Roles and Bindings, `kubectl auth can-i`, auditing permissions (ch03)
-- [ ] ServiceAccount mechanics — automount behavior, projected tokens, workload identity (ch04)
-- [ ] Admission Controllers — the third gate after AuthN/AuthZ; MutatingWebhookConfiguration, ValidatingWebhookConfiguration (ch05+)
-- [ ] Network Policies in full — default-deny pattern, ingress vs egress, namespace selectors, namespaceSelector + podSelector AND behavior (ch06)
-- [ ] OPA/Gatekeeper — policy-as-code via webhook mode; CKS territory but relevant for enterprise context
-- [ ] OIDC configuration on kube-apiserver — `--oidc-issuer-url`, `--oidc-client-id`, token validation mechanics (CKA-level)

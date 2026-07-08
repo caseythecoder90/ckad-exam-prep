@@ -4,7 +4,7 @@ chapter: 07
 title: Headless Services and Per-Pod DNS
 course: CKAD — Mumshad Mannambeth (KodeKloud/Udemy)
 examinable: YES — clusterIP: None, per-pod DNS format, serviceName wiring
-depth_note: Extra depth on kube-proxy internals and Casey's xDS/shard use case
+depth_note: Extra depth on kube-proxy internals
 cross_reference: ch06-statefulsets.md (ordering, naming, podManagementPolicy)
 companion_diagrams:
   - diagrams/14-service-implementation-kube-proxy.png
@@ -21,7 +21,7 @@ Ch06 covers StatefulSet ordering, ordinal naming, sticky identity, `podManagemen
 
 ## How a Kubernetes Service Is Actually Implemented
 
-You asked exactly the right question. Yes — a Service is essentially entries in the proxy's network table so routing can happen. Here's the full chain:
+A Service is essentially entries in the proxy's network table so routing can happen. The full chain:
 
 ### Control Plane: How the Rules Get There
 
@@ -246,65 +246,25 @@ spec:
 
 ---
 
-## Your Work Scenario — Shards + Leader Election + Envoy xDS
+## Advanced Pattern — Sharded Leader/Standby + Envoy xDS
 
-Your architecture:
-- 3 shard groups, 2^26 partition space, disruptor microbatching
-- Each shard: leader pod + standby pod
-- Control plane manages leader election, pushes topology to Envoy via xDS (EDS — Endpoint Discovery Service)
-
-This maps cleanly to headless services. Here's how:
-
-**Option A: Single StatefulSet, 6 pods**
-
-```yaml
-# StatefulSet: shards  (6 pods: shard-0..shard-5)
-# Headless: shards-h
-# Layout:
-#   shard-0 = group-0 leader
-#   shard-1 = group-0 standby
-#   shard-2 = group-1 leader
-#   shard-3 = group-1 standby
-#   shard-4 = group-2 leader
-#   shard-5 = group-2 standby
-```
-
-Per-pod DNS entries:
-```
-shard-0.shards-h.namespace.svc.cluster.local  →  group-0 leader IP
-shard-1.shards-h.namespace.svc.cluster.local  →  group-0 standby IP
-...
-```
-
-**Option B: 3 StatefulSets, 2 replicas each** (cleaner isolation)
-```
-StatefulSet: shard-group-0 (2 pods: shard-group-0-0, shard-group-0-1)
-StatefulSet: shard-group-1 (2 pods: shard-group-1-0, shard-group-1-1)
-StatefulSet: shard-group-2 (2 pods: shard-group-2-0, shard-group-2-1)
-```
+A more complex example: shard groups where each group has a leader pod + standby pod, and a control plane pushes the current leader's endpoint to Envoy via xDS (EDS — Endpoint Discovery Service). This maps cleanly to headless services — one StatefulSet + headless service per group (or a single StatefulSet with ordinals mapping to leader/standby roles) gives each pod a stable per-pod DNS entry.
 
 **How the control plane uses this:**
 
-1. Control plane watches Kubernetes `Lease` objects or your internal Raft/election mechanism to determine current leader for each group
-2. When election fires (leader wins or changes), control plane knows the winning pod's name (e.g., `shard-group-0-0`)
-3. Control plane resolves or constructs the stable DNS: `shard-group-0-0.shards-h.namespace.svc.cluster.local`
-4. Control plane pushes this endpoint to Envoy via xDS EDS update
-5. Envoy's cluster config routes writes for partition group 0 to that endpoint
-6. Envoy's health check detects if the pod goes down; control plane pushes a new EDS update with the standby
+1. Control plane watches Kubernetes `Lease` objects (or an internal Raft/election mechanism) to determine the current leader for each group
+2. When election fires, the control plane knows the winning pod's name (e.g., `shard-group-0-0`)
+3. Control plane constructs the stable DNS: `shard-group-0-0.shards-h.namespace.svc.cluster.local`
+4. Control plane pushes this endpoint to Envoy via an xDS EDS update; Envoy routes writes for that group to it
+5. Envoy's health check detects the pod going down; the control plane pushes a new EDS update with the standby
 
-**The key property you can rely on:**
+**The key property:** `shard-group-0-0.shards-h.namespace.svc.cluster.local` always resolves to the **current IP** of pod `shard-group-0-0`. If the pod restarts on a different node, DNS updates within a few seconds (CoreDNS TTL is typically 5–30 seconds). So:
 
-`shard-group-0-0.shards-h.namespace.svc.cluster.local` always resolves to the **current IP** of pod `shard-group-0-0`. If that pod restarts on a different node, the DNS updates within a few seconds (CoreDNS TTL is typically 5–30 seconds). So:
-
-- The DNS name is stable → your config can reference it statically
+- The DNS name is stable → config can reference it statically
 - The DNS value (IP) stays current → connections always reach the right pod
-- If the pod is completely down (between crash and reschedule), DNS temporarily doesn't resolve → Envoy's health checking kicks in and stops routing until it comes back
+- If the pod is completely down (between crash and reschedule), DNS temporarily doesn't resolve → Envoy's health checking stops routing until it comes back
 
-**Is this the right approach for your case?**
-
-The headless DNS gives your control plane **stable, resolvable addresses per pod** — exactly what you need to tell Envoy which pod is the current leader for each shard group. Your control plane + xDS approach is architecturally sound. The headless service is the network identity layer; the leader election mechanism you're building is the routing decision layer.
-
-One thing to verify with your platform team: check the CoreDNS TTL in your JPMC cluster. If it's high (e.g., 30s), there can be a lag between a pod getting a new IP and DNS updating. For a microbatching engine where failover latency matters, you might prefer the control plane to push the new pod IP directly via xDS (which it can get from the Endpoints API) rather than relying on DNS TTL propagation.
+For failover-latency-sensitive workloads, the CoreDNS TTL can introduce lag between a pod getting a new IP and DNS updating; pushing the new pod IP directly via xDS (from the Endpoints API) avoids relying on DNS TTL propagation.
 
 ---
 
@@ -356,24 +316,3 @@ kubectl exec -it mysql-0 -- cat /etc/resolv.conf
 # search default.svc.cluster.local svc.cluster.local cluster.local
 # nameserver 10.96.0.10  (CoreDNS ClusterIP)
 ```
-
----
-
-## TL;DR
-
-A Kubernetes Service is a virtual IP backed by kernel iptables/ipvs rules that kube-proxy maintains. The VIP gets DNATted to a real pod IP in the kernel — transparent to the application. For databases with roles (master/slave), this load balancing is a problem: you can't target a specific pod via a ClusterIP service. Pod DNS is IP-derived (`10-40-2-8.default.pod.cluster.local`) and changes on restart, so it's not stable. A headless service (`clusterIP: None`) skips the VIP entirely — kube-proxy ignores it, CoreDNS creates per-pod A records instead, and you get `<pod-name>.<service-name>.<ns>.svc.cluster.local` pointing to each specific pod. StatefulSets inject `hostname` and `subdomain` into each pod automatically via `serviceName`, so you get stable per-pod DNS without any manual configuration. Regular pods need `subdomain` and `hostname` set manually in the pod spec to get the same effect.
-
----
-
-## Resolved Threads
-
-- **"Headless service required for StatefulSet stable DNS"** (ch06 open thread): fully covered here. `serviceName` + headless service = automatic per-pod DNS entries.
-- **"How do slaves find the master?"**: via `MASTER_HOST=mysql-0.mysql-h.default.svc.cluster.local`, hardcoded in config. This name is stable across pod restarts.
-
-## Open Threads
-
-- [ ] **CoreDNS TTL and failover latency** — for Casey's shard/leader case, understanding whether xDS with direct IP pushes from Endpoints API is faster than DNS-based discovery during failover
-- [ ] **`volumeClaimTemplates`** — per-pod PVC creation, how PVC names are derived from ordinal, lifecycle on scale-down (ch08)
-- [ ] **kube-proxy mode in JPMC cluster** — worth checking: `kubectl get configmap kube-proxy -n kube-system -o yaml | grep mode`; ipvs mode is common at scale
-- [ ] **EndpointSlices vs Endpoints** — EndpointSlices (v1) are the modern object; Endpoints (original) still exists for compatibility. Same concept, different sharding for large services (>100 endpoints per slice by default)
-- [ ] **DNS-based service discovery vs Envoy xDS** — the tradeoffs; DNS works for stable per-pod addressing but has TTL lag; xDS (EDS) is event-driven with sub-second propagation — relevant for your control plane design

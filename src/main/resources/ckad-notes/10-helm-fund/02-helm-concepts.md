@@ -22,9 +22,8 @@ cka_cks_note: |
 
 ## 1. From hardcoded YAML to templates
 
-The instructor walks through the WordPress example to show the core problem
-templates solve. The raw YAML files have environment-specific values
-hardcoded directly in them:
+The WordPress example shows the core problem templates solve. The raw YAML
+files have environment-specific values hardcoded directly in them:
 
 ```yaml
 # templates/deployment.yaml (BEFORE templating — hardcoded)
@@ -113,9 +112,6 @@ image: wordpress:5.9.3
 storage: 50Gi
 replicaCount: 5
 ```
-
-This is exactly the per-environment value separation pattern your JPMC
-CI/CD pipeline uses.
 
 ---
 
@@ -386,57 +382,3 @@ full `values.yaml` so you know what you can override.
 `helm install release-4 ./wordpress` installs from a local chart directory
 (after `helm pull --untar`). The path starts with `./` — without it, Helm
 looks for a repo chart.
-
----
-
-## 7. JPMC context
-
-This lecture maps directly to your daily workflow:
-
-- **Per-environment values files**: your Spring Boot Helm chart almost
-  certainly has `values-dev.yaml`, `values-staging.yaml`, and
-  `values-prod.yaml` (or the pipeline injects `--set` overrides). The
-  template variables in `templates/deployment.yaml` reference
-  `.Values.image.tag`, `.Values.resources.limits.memory`, etc. — same
-  pattern as the WordPress example.
-
-- **Internal Helm repo**: JPMC likely runs an internal chart repository
-  (ChartMuseum, Harbor, or Artifactory) rather than pulling from public
-  Artifact Hub. Your pipeline does `helm repo add internal https://...`
-  and installs from there.
-
-- **`helm pull` for debugging**: if a chart-based deployment fails and you
-  need to see what templates are rendering, `helm pull --untar` followed
-  by `helm template` with your values lets you see the exact Kubernetes
-  manifests without touching the cluster.
-
----
-
-## 8. TL;DR
-
-- **Templates**: YAML files with `{{ .Values.xxx }}` Go template placeholders.
-  Values come from `values.yaml` (defaults) or overrides (`--set`, `-f`).
-- **Chart structure**: `Chart.yaml` (metadata) + `templates/` (templatized
-  manifests) + `values.yaml` (defaults). Together they form the package.
-- **Chart.yaml**: `apiVersion: v2` for Helm 3; contains name, version,
-  description, keywords, maintainers.
-- **Repos**: `helm repo add` configures a chart source; `helm repo update`
-  refreshes. `helm search hub` searches public Artifact Hub; `helm search
-  repo` searches locally-added repos.
-- **Releases**: each `helm install` creates an independent release with its
-  own revision history. Same chart → multiple releases.
-- **Key commands for exam**: `helm install`, `helm upgrade`, `helm rollback`,
-  `helm uninstall`, `helm list`, `helm search hub/repo`, `helm pull --untar`,
-  `helm template`, `helm show values`.
-- This is the instructor's stated exam-scope depth for Helm on the CKAD.
-
----
-
-## Resolved threads (from ch01)
-
-- [x] **Helm chart structure**: fully covered — Chart.yaml, templates/,
-  values.yaml, and the full directory layout.
-- [x] **Helm repositories**: Artifact Hub, repo add/update/list/remove,
-  hub vs repo search distinction.
-- [x] **Helm on the exam**: all exam-relevant commands documented with
-  full reference table.

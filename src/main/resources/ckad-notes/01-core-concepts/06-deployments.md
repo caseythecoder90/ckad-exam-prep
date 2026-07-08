@@ -1,6 +1,6 @@
 # 06 — Deployments
 
-> Deployments are the workload object you'll write most often in real life. They wrap a ReplicaSet (which wraps pods) and add the things you actually need in production: rolling updates, rollbacks, history, pause/resume. The order-processing-service pod from chapter 4 was created by a Deployment — that `ownerReferences` chain ends here.
+Deployments are the workload object you'll write most often in real life. They wrap a ReplicaSet (which wraps pods) and add the things you actually need in production: rolling updates, rollbacks, history, pause/resume. The order-processing-service pod from chapter 4 was created by a Deployment — that `ownerReferences` chain ends here.
 
 ---
 
@@ -54,7 +54,7 @@ This is how you can look at a pod name and immediately know which Deployment it 
 
 ## 3. Deployment YAML
 
-The good news your instructor mentioned: **the Deployment YAML is almost identical to a ReplicaSet YAML**. Change `kind: ReplicaSet` to `kind: Deployment` and you're 95% of the way there.
+**The Deployment YAML is almost identical to a ReplicaSet YAML.** Change `kind: ReplicaSet` to `kind: Deployment` and you're 95% of the way there.
 
 ```yaml
 apiVersion: apps/v1
@@ -234,7 +234,7 @@ This is why Kubernetes keeps old ReplicaSets around (the `revisionHistoryLimit` 
 
 ## 7. Pause and resume
 
-Your instructor mentioned this. When you have multiple changes to make and don't want each one to trigger a separate rollout:
+When you have multiple changes to make and don't want each one to trigger a separate rollout:
 
 ```bash
 # Pause the deployment — changes don't trigger rollouts until resumed
@@ -467,25 +467,3 @@ kubectl scale --replicas=6 deployment/<name>
 # Delete
 kubectl delete deployment <name>
 ```
-
----
-
-## Quick recall checklist
-
-- [ ] What does a Deployment create when you apply it?
-- [ ] What's the difference between Deployment and ReplicaSet YAML?
-- [ ] What does the random hash in a pod name like `myapp-deployment-6795844b58-cm84s` represent?
-- [ ] What are the two rollout strategies, and what's the default?
-- [ ] What does `kubectl rollout undo deployment/<name>` actually do under the hood?
-- [ ] Why are old ReplicaSets kept around after a rollout?
-- [ ] When would you use `kubectl rollout pause` instead of just applying a new YAML?
-- [ ] What's the difference between `kubectl set image` and editing the YAML and applying?
-- [ ] How would you generate a starter Deployment YAML on the exam in one command?
-- [ ] What controls how many old revisions are kept for rollback?
-- [ ] Which single command shows you the Deployment, ReplicaSet, Pods, and Services together? What does it NOT show?
-
----
-
-## Notes for next chapters
-
-Up next: **Services**. Now that you can run multiple pods of your app, you need a stable way for users (or other pods) to reach them. Pods get random IPs that change when they restart — a Service gives you a stable virtual IP that load-balances across whatever pods match its selector. This is the network glue.

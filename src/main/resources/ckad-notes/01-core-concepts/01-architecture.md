@@ -1,10 +1,5 @@
 # 01 — Kubernetes Architecture
 
-> **CKAD prep notes.** Architecture chapter: cluster basics, master vs worker, components, kubectl.
-> Keep adding to this folder as new topics come up (pods, deployments, services, configmaps, etc.).
-
----
-
 ## 1. The big picture: cluster, nodes, master vs worker
 
 A **Kubernetes cluster** is a group of machines (physical or VMs) working together to run containers. Each machine in the cluster is a **node**. Two roles:
@@ -198,32 +193,3 @@ When I run `kubectl exec -it my-pod -- bash` at work, the full chain is:
 5. Traffic streams back through the same path to my terminal
 
 Same chain for `kubectl logs`, except the kubelet is reading the container's stdout/stderr stream from the runtime instead of attaching a TTY.
-
----
-
-## Quick recall checklist
-
-Use this as a self-quiz before moving to the next chapter:
-
-- [ ] Name the four control plane components and what each does
-- [ ] Name the three worker node components and what each does
-- [ ] Which component is the only one that writes to etcd?
-- [ ] What does the scheduler actually do when it "schedules" a pod?
-- [ ] How does the kubelet know to start a pod?
-- [ ] What does kube-proxy do, and how is it implemented under the hood?
-- [ ] What's the difference between `kubectl create` and `kubectl apply`?
-- [ ] What does `--dry-run=client -o yaml` do, and why is it useful on the exam?
-
----
-
-## Notes for next chapters
-
-Topics to cover next:
-- Pods (single vs multi-container, init containers, sidecars)
-- Deployments, ReplicaSets, rolling updates
-- Services (ClusterIP, NodePort, LoadBalancer, Ingress)
-- ConfigMaps and Secrets
-- Volumes and persistent storage
-- Namespaces and resource quotas
-- Liveness, readiness, startup probes
-- Jobs and CronJobs

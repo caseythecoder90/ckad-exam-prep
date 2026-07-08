@@ -1,12 +1,5 @@
 # Bytes, Bits & CPU Units — Reference
 
-> **Section:** 02-configuration (companion to `08-resource-requirements.md`)
-> **Purpose:** Standalone refresher on the unit conventions that show up in
-> Kubernetes manifests. Not a CKAD topic in itself; you just need to read
-> and write them fluently.
-
----
-
 ## 1. Bits and bytes
 
 The base unit of memory is the **bit** (a 0 or a 1). Memory is almost always
@@ -24,9 +17,8 @@ not megabits.
 
 ## 2. The two scales — decimal (SI) vs binary (IEC)
 
-This is the part that confused you. There are **two** valid scales for
-"kilo" / "mega" / "giga", and Kubernetes accepts both. They are not the
-same.
+There are **two** valid scales for "kilo" / "mega" / "giga", and
+Kubernetes accepts both. They are not the same.
 
 ### Decimal (SI, base 10) — what marketing uses
 
@@ -57,7 +49,7 @@ Computers count in powers of 2 because memory addresses are binary. A
 
 ### The naming convention to lock in
 
-You had this right: **the `bi` infix marks binary.**
+**The `bi` infix marks binary.**
 
 - `K` → kilo (×1,000); `Ki` → **kibi** (×1,024)
 - `M` → mega (×1,000,000); `Mi` → **mebi** (×1,048,576)
@@ -157,7 +149,7 @@ cpu: 100m    # one-tenth of a core
 
 ### What "1 CPU" actually means
 
-The lecture's slide listed equivalents:
+Equivalents:
 
 > 1 CPU  ≡  1 AWS vCPU  ≡  1 GCP Core  ≡  1 Azure Core  ≡  1 Hyperthread
 
