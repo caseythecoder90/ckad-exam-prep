@@ -1,15 +1,8 @@
 # Deployment Updates and Rollbacks
 
-> **Section:** 05-pod-design
-> **Course chapter:** 2 (Deployment Updates and Rollbacks)
-> **Why this is in CKAD:** Deployments are the most-used workload object and rollouts/rollbacks are heavily tested. You must be able to update an image, watch a rollout, read revision history, and roll back - and explain the difference between the Recreate and RollingUpdate strategies.
-> **Companion files:** `01-labels-selectors-annotations.md` (a Deployment finds its ReplicaSet/pods by selector, and `change-cause` is an annotation); `../04-observability/03-logging.md` (the ReplicaSet hash in pod names comes from exactly this mechanism)
+## 1. Rollouts and revisions
 
----
-
-## 1. Rollouts and revisions (the part worth getting straight)
-
-The instructor's wording - "a new rollout creates a new ReplicaSet, recorded as a revision" - only clicks once you see the object hierarchy:
+A new rollout creates a new ReplicaSet, recorded as a revision. This clicks once you see the object hierarchy:
 
 ```
 Deployment  ->  ReplicaSet  ->  Pods
@@ -20,19 +13,19 @@ A **Deployment does not manage pods directly.** It manages **ReplicaSets**, and 
 - **Creating** a Deployment triggers the first **rollout**, which creates **ReplicaSet #1**, which creates the pods. That state is **Revision 1**.
 - **Upgrading** (changing the pod template - most often the container image, e.g. `nginx:1.7.0` -> `nginx:1.7.1`) triggers a **new rollout**. The Deployment does **not** edit the existing ReplicaSet. It creates a **brand-new ReplicaSet #2** for the new template, scales it up, and scales the old one down. That new state is **Revision 2**.
 
-The key insight (this is what was unclear): **the old ReplicaSet is not deleted - it is kept around at 0 replicas.** That retained ReplicaSet *is* the revision. So "Revision 2" is literally ReplicaSet #2. Rollback is then just "scale the old ReplicaSet back up and the new one down" - no rebuild, no re-pull, because the old ReplicaSet (with its old template and image) is still sitting there.
+The key insight: **the old ReplicaSet is not deleted - it is kept around at 0 replicas.** That retained ReplicaSet *is* the revision. So "Revision 2" is literally ReplicaSet #2. Rollback is then just "scale the old ReplicaSet back up and the new one down" - no rebuild, no re-pull, because the old ReplicaSet (with its old template and image) is still sitting there.
 
 ![How a Deployment rolls out and rolls back via ReplicaSets](./diagrams/02-deployment-rollout-rollback.png)
 
-This also explains the hash-suffixed pod names from your logging question: each ReplicaSet's name carries a template hash (`myapp-deployment-67c749c58c`), and its pods inherit it (`...-67c749c58c-x7k2p`). When you see two ReplicaSets, one at 5 replicas and one at 0, you are looking at the current revision and the previous one.
+This also explains the hash-suffixed pod names: each ReplicaSet's name carries a template hash (`myapp-deployment-67c749c58c`), and its pods inherit it (`...-67c749c58c-x7k2p`). When you see two ReplicaSets, one at 5 replicas and one at 0, you are looking at the current revision and the previous one.
 
 ## 2. Deployment strategies: Recreate vs RollingUpdate
 
-The instructor frames the core problem: you have N replicas on the old version and want them on the new version. Two strategies:
+The core problem: you have N replicas on the old version and want them on the new version. Two strategies:
 
 ### Recreate
 
-Destroy **all** old pods first, then create all new ones. Simple, but there is a window where **zero** pods are running - the application is **down** during the switch (images 4-5: all old pods go down, then all new come up, with "Application down" in between).
+Destroy **all** old pods first, then create all new ones. Simple, but there is a window where **zero** pods are running - the application is **down** during the switch.
 
 ```yaml
 spec:
@@ -46,7 +39,7 @@ spec:
 
 ### RollingUpdate (the default)
 
-Take down old pods **a few at a time** and bring up new ones in their place, so the app stays available throughout (image 6, bottom row: old and new pods coexist, swapping gradually). No downtime, and old + new versions run side by side during the transition.
+Take down old pods **a few at a time** and bring up new ones in their place, so the app stays available throughout. No downtime, and old + new versions run side by side during the transition.
 
 ```yaml
 spec:
@@ -61,7 +54,7 @@ spec:
 - `maxUnavailable` / `maxSurge` control the pace and whether you trade capacity for speed.
 - **This is the default** - if you write no `strategy:`, you get RollingUpdate.
 
-Your work situation maps directly: switching a Deployment from `Recreate` to `RollingUpdate` means upgrades stopped causing a brief outage and instead roll pod-by-pod with the old version still serving until the new pods are ready. The trade-off you took on: during a rolling update, **both versions are live at once**, so the app (and anything it talks to, like a DB schema) must tolerate mixed versions. That is the one real gotcha of switching off Recreate.
+Switching a Deployment from `Recreate` to `RollingUpdate` means upgrades stop causing a brief outage and instead roll pod-by-pod with the old version still serving until the new pods are ready. The trade-off: during a rolling update, **both versions are live at once**, so the app (and anything it talks to, like a DB schema) must tolerate mixed versions. That is the one real gotcha of switching off Recreate.
 
 You can confirm which strategy a Deployment uses:
 
@@ -77,7 +70,7 @@ When you change the template on a Deployment that wants 5 replicas:
 2. It scales the new ReplicaSet **up** while scaling the old ReplicaSet **down**, a step at a time (RollingUpdate), respecting `maxSurge`/`maxUnavailable`.
 3. When the new ReplicaSet is at 5 and the old is at 0, the rollout is complete. The old ReplicaSet stays at 0 as the previous revision.
 
-`kubectl get replicasets` during/after a rollout shows this directly - two ReplicaSets, the new one ramping to 5, the old one draining to 0 (images 9/11).
+`kubectl get replicasets` during/after a rollout shows this directly - two ReplicaSets, the new one ramping to 5, the old one draining to 0.
 
 ## 4. How to trigger an update
 
@@ -90,7 +83,7 @@ Change the field (commonly the image) in the Deployment manifest and apply:
 kubectl apply -f deployment-definition.yml
 ```
 
-This is almost certainly what your work pipeline does: your push builds a new image (new tag/digest), the pipeline updates the image field in the manifest, and `apply` reconciles the change - which the Deployment turns into a new rollout/revision. Worth confirming, but your hunch is right: the manifest changes, `apply` runs, a new ReplicaSet is born.
+This is the typical CI/CD path: a push builds a new image (new tag/digest), the pipeline updates the image field in the manifest, and `apply` reconciles the change - which the Deployment turns into a new rollout/revision.
 
 ### Option B - `kubectl set image` (imperative, and the behavior caveat)
 
@@ -140,7 +133,7 @@ kubectl rollout undo deployment/myapp-deployment
 # rolls back to the immediately previous revision
 ```
 
-Mechanically (images 10/11): the **current ReplicaSet scales down to 0** and the **previous ReplicaSet scales back up** to the desired count. Because the old ReplicaSet was retained, this is fast - no image re-pull, no rebuild.
+Mechanically: the **current ReplicaSet scales down to 0** and the **previous ReplicaSet scales back up** to the desired count. Because the old ReplicaSet was retained, this is fast - no image re-pull, no rebuild.
 
 Roll back to a **specific** revision instead of just the previous one:
 
@@ -150,7 +143,7 @@ kubectl rollout undo deployment/myapp-deployment --to-revision=1
 
 `kubectl get replicasets` after a rollback shows the swap reversed: the old ReplicaSet back at 5, the new one at 0.
 
-You can also pause/resume a rollout to batch several changes into one revision (beyond the lecture, occasionally on the exam):
+You can also pause/resume a rollout to batch several changes into one revision:
 
 ```bash
 kubectl rollout pause deployment/myapp-deployment
@@ -200,19 +193,3 @@ kubectl rollout resume deployment/myapp
 - **`--revision=N` inspects, `--to-revision=N` rolls back.** Don't confuse the two flags.
 - **`scale` is not a rollout.** Changing replica count doesn't create a new revision; only template changes do.
 - **RollingUpdate means mixed versions briefly coexist** - the app and its dependencies must tolerate that. This is the real-world risk of moving off Recreate.
-
-## 9. TL;DR / takeaways
-
-- A Deployment manages **ReplicaSets**, which manage pods. Each template change spawns a **new ReplicaSet = a new revision**; the old ReplicaSet is kept at 0 for instant rollback.
-- **Recreate** = kill all, then create all (downtime, not default). **RollingUpdate** = swap pod-by-pod (no downtime, default, but old+new coexist briefly).
-- Update by **`kubectl apply -f`** (file is source of truth - your pipeline's path) or **`kubectl set image`** (live-only, drifts from the file).
-- Watch with `rollout status`; review with `rollout history` (+ `--revision=N` to inspect a revision); record intent via the `change-cause` annotation (`--record` is the deprecated way).
-- Roll back with `rollout undo` (previous) or `--to-revision=N` (specific); under the hood it just rescales the retained old ReplicaSet.
-- Your case: moving Recreate -> RollingUpdate removed the upgrade outage; the cost is tolerating two versions live at once during the roll.
-
----
-
-### Open threads
-- [ ] Confirm your pipeline's mechanism: image build -> manifest image field updated -> `apply` -> new ReplicaSet/revision. (Check whether it edits the file or uses `set image`.)
-- [ ] **maxSurge / maxUnavailable** tuning deep-dive if a later chapter or killer.sh exercise covers blue-green / canary patterns.
-- [ ] Tie `kubernetes.io/change-cause` back to the annotations section in `01-labels-selectors-annotations.md`.

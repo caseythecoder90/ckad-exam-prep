@@ -54,8 +54,7 @@ the full deprecation policy (typically 12 months minimum).
 
 ## 2. Preferred version vs storage version
 
-This is the most conceptually important part of this lecture — two distinct
-concepts that are often confused.
+Two distinct concepts that are often confused.
 
 ### Preferred version
 
@@ -104,10 +103,9 @@ per resource type — all stored objects are converted to it at write time.
 Key properties:
 - There is **exactly one** storage version per resource type at any moment
 - It is typically the most recent stable (GA) version
-- It is **not exposed** through any standard kubectl command or API endpoint
-  (this was true at time of the instructor's recording and remains essentially
-  true — the storage version is declared in the CRD spec for custom resources
-  but is an internal implementation detail for built-in resources)
+- It is **not exposed** through any standard kubectl command or API endpoint —
+  the storage version is declared in the CRD spec for custom resources but is
+  an internal implementation detail for built-in resources
 
 ### How to inspect the storage version directly
 
@@ -134,12 +132,8 @@ Deployment
 
 This confirms that regardless of whether the object was created with
 `apps/v1alpha1`, `apps/v1beta1`, or `apps/v1`, it is stored in etcd as
-`apps/v1`.
-
-> **Homelab note:** this etcdctl query is only possible from the control-plane
-> node where the etcd TLS certs live. At JPMC, you don't have control-plane
-> access. On your future Hetzner cluster you'll be able to run this freely —
-> it's a great way to see exactly what Kubernetes is actually persisting.
+`apps/v1`. Note this etcdctl query is only possible from the control-plane
+node where the etcd TLS certs live.
 
 ### Practical consequence: you can write any supported version
 
@@ -234,20 +228,18 @@ systemctl daemon-reload
 systemctl restart kube-apiserver
 ```
 
-> **Question you asked:** is the `ExecStart` command how the apiserver is
-> started? Yes, exactly. In a non-kubeadm cluster, kube-apiserver is a
-> systemd service and `ExecStart` is the command systemd runs to launch
-> the process. The flags after the binary name are all the configuration
-> options for that run. In a kubeadm cluster the equivalent is the
-> `command:` array in the static pod manifest — kubelet runs that command
-> inside the pod, and kubelet itself is a systemd service.
+In a non-kubeadm cluster, kube-apiserver is a systemd service and `ExecStart`
+is the command systemd runs to launch the process; the flags after the binary
+name are its configuration options. In a kubeadm cluster the equivalent is the
+`command:` array in the static pod manifest — kubelet runs that command inside
+the pod, and kubelet itself is a systemd service.
 
 ---
 
 ## 5. The `/internal.apiserver.k8s.io` group and storageversion
 
-The instructor mentions `/internal.apiserver.k8s.io` in passing. This is
-the group that contains the `StorageVersion` resource — a cluster-scoped
+`/internal.apiserver.k8s.io` is the group that contains the
+`StorageVersion` resource — a cluster-scoped
 object that records which version of each resource type is currently the
 storage version. It's alpha-level machinery for cluster operators doing
 version migrations, not something you'd use day-to-day or on the CKAD exam.
@@ -266,10 +258,9 @@ Key rules for the exam:
 - **GA**: must be supported for at least 12 months or 3 releases after
   deprecation announcement, whichever is longer
 
-You've already seen this in practice in your notes: `extensions/v1beta1`
-(used in old Ingress YAML) was removed and replaced by
-`networking.k8s.io/v1`. If you encounter old YAML using a deprecated
-`apiVersion`, `kubectl convert` (or manual edit) is the fix.
+For example, `extensions/v1beta1` (used in old Ingress YAML) was removed and
+replaced by `networking.k8s.io/v1`. If you encounter old YAML using a
+deprecated `apiVersion`, `kubectl convert` (or manual edit) is the fix.
 
 ---
 
@@ -300,60 +291,3 @@ the stored version.
 After editing `/etc/kubernetes/manifests/kube-apiserver.yaml`, the apiserver
 takes 30–60 seconds to restart. Trying to `kubectl` immediately after saving
 will return connection errors. Wait and verify before continuing.
-
----
-
-## 8. JPMC context
-
-At JPMC, you're consuming API versions as a developer, not managing them. A
-few practical connections:
-
-- **Why `apiVersion: apps/v1` in every Spring Boot deployment manifest:**
-  `apps/v1` is the GA preferred version for Deployments. If you had old
-  manifests from early Kubernetes days with `apps/v1beta1`, the platform
-  team would have forced a migration when that version was deprecated.
-
-- **Why you can't query etcd directly:** at JPMC you have namespace-scoped
-  RBAC permissions only. The etcd port (2379) is not accessible from the
-  application namespace — it's a control-plane component locked behind
-  network policy. This is correct and expected. Your future Hetzner cluster
-  will let you explore etcd queries like the one in section 2.
-
-- **The `--runtime-config` flag:** JPMC's platform team controls the
-  kube-apiserver flags. If a new alpha API is needed for some future feature,
-  a request would go through the platform org to enable it. As a SEAL ID
-  team you can't set apiserver flags.
-
----
-
-## 9. TL;DR
-
-- API versions (`v1alpha1` → `v1beta1` → `v1`) describe the maturity of a
-  resource's schema, not the workload itself.
-- Alpha: disabled by default, unstable, expert-only. Beta: enabled by
-  default, mostly stable. GA: enabled by default, stable, long-term support.
-- **Preferred version**: what kubectl uses when you read back objects.
-  Inspectable via `curl /apis/<group>/` → `preferredVersion` field, or via
-  `kubectl explain <resource>`.
-- **Storage version**: what etcd stores, regardless of submission version.
-  Not exposed via kubectl — inspectable only by querying etcd directly with
-  `etcdctl get /registry/...`.
-- Enable alpha API versions with `--runtime-config=group/version` in the
-  kube-apiserver config (static pod manifest for kubeadm, systemd service
-  for non-kubeadm); apiserver restarts automatically for static pods.
-- `kubectl explain <resource>` → `VERSION:` is your fastest exam-time
-  version lookup.
-
----
-
-## Open threads
-
-- [ ] **`kubectl convert`**: the tool for migrating YAML files between API
-  versions (e.g., old `extensions/v1beta1` Ingress → `networking.k8s.io/v1`).
-  Covered as a separate chapter likely. Relevant to the deprecation notes here.
-- [ ] **Conversion webhooks** (CKA/CKS scope): when a CRD supports multiple
-  versions, a conversion webhook translates between them at read/write time.
-  The same mechanism that built-in resources use internally.
-- [ ] **`StorageVersion` resource** (`/internal.apiserver.k8s.io`): alpha
-  machinery for tracking which version is the storage version per resource
-  type. Flag for CKA study.

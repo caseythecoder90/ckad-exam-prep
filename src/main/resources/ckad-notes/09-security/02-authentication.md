@@ -75,7 +75,7 @@ The API server supports multiple authentication plugins simultaneously. A reques
 
 ## Static Token File — Skip It
 
-The lecture covers this as "basic auth." It's a CSV file (`token,user,uid,group`) passed to the API server via `--token-auth-file`. The user sends the token in an `Authorization: Bearer` header.
+A CSV file (`token,user,uid,group`) passed to the API server via `--token-auth-file`. The user sends the token in an `Authorization: Bearer` header.
 
 **Why it's dead:** tokens are plaintext on disk, no rotation without API server restart, no expiry, no audit integration. Removed from CKS exam scope, deprecated in the course, not something you'd touch in production or your own cluster.
 
@@ -147,7 +147,7 @@ kube-apiserver \
 
 ### kubeconfig exec plugin
 
-The exec plugin is the mechanism that makes `klogin` work. Instead of a static token in kubeconfig, you specify a command to run:
+The exec plugin is the mechanism that makes enterprise login tools work. Instead of a static token in kubeconfig, you specify a command to run:
 
 ```yaml
 # ~/.kube/config
@@ -161,8 +161,8 @@ users:
         - --cluster
         - prod-cluster
       env:
-        - name: KLOGIN_TENANT
-          value: jpmc
+        - name: LOGIN_TENANT
+          value: example
 ```
 
 Every time kubectl needs credentials, it runs this command and reads the returned `ExecCredential` object (contains the Bearer token). This enables:
@@ -219,15 +219,15 @@ User (Kerberos TGT)
 
 Kubernetes never knows Kerberos was involved. It just sees a valid OIDC JWT. The broker is the translation layer.
 
-### klogin at JPMC
+### Enterprise klogin-style flow
 
-`klogin` almost certainly does:
-1. Check for an existing valid Kerberos TGT (`klist`). If expired, triggers re-authentication (`kinit`) against JPMC's Active Directory
-2. Request a service ticket for JPMC's internal OIDC broker
-3. Exchange the Kerberos service ticket for an OIDC JWT via the broker
-4. Write the JWT (or configure an exec plugin that fetches it) into `~/.kube/config` for the target cluster
+An enterprise auth tool typically:
+1. Checks for an existing valid Kerberos TGT (`klist`). If expired, triggers re-authentication (`kinit`) against Active Directory
+2. Requests a service ticket for the internal OIDC broker
+3. Exchanges the Kerberos service ticket for an OIDC JWT via the broker
+4. Writes the JWT (or configures an exec plugin that fetches it) into `~/.kube/config` for the target cluster
 
-When your token expires mid-day and kubectl suddenly throws 401 errors, it means the JWT expired. Re-run `klogin` to get a fresh one.
+When a token expires mid-session and kubectl throws 401 errors, the JWT expired. Re-run the login tool to get a fresh one.
 
 ---
 
@@ -329,19 +329,3 @@ The combination of OIDC (for users) + cert-manager (for component certs) gives y
 - **ServiceAccount is the only Kubernetes-managed account type.** Everything else is external.
 - **The `system:masters` group is hardcoded admin.** Any cert with `O=system:masters` gets full access regardless of RBAC.
 - **`kubectl config set-context --current --namespace=<ns>`** is the way to change your default namespace without editing the file directly — useful shortcut during the exam.
-
----
-
-## TL;DR
-
-Kubernetes has no User object — human identities come from external systems (certificates, OIDC JWTs, Kerberos tickets). Service Accounts are the only accounts Kubernetes manages directly, and they're for pods. The API server chains authentication plugins: any plugin that validates a request wins. Static tokens are dead; don't use them. Certificates are standard for cluster components and bootstrap. OIDC is the right answer for human users in any serious setup. Kerberos isn't natively supported but enterprise clusters (including JPMC) bridge it via an OIDC broker — `klogin` performs that bridge, and Kubernetes only ever sees the resulting JWT. The kubeconfig exec plugin is the mechanism that makes tools like `klogin` integrate cleanly with kubectl.
-
----
-
-## Open Threads
-
-- [ ] ServiceAccount deep dive — projected tokens, automounting, workload identity for cloud providers (ch04)
-- [ ] TLS and certificate mechanics — CA, CSR, cert signing, rotation (ch05)
-- [ ] RBAC — after authentication, what the extracted identity can do (ch03)
-- [ ] Webhook token authentication — custom auth via external HTTP service; relation to admission webhooks
-- [ ] kubeadm OIDC setup on own cluster — step-by-step for Hetzner VPS setup

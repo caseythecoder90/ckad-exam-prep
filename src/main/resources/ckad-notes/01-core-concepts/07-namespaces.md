@@ -1,6 +1,6 @@
 # 07 — Namespaces
 
-> Namespaces partition a cluster into isolated environments. At Visa you logged into specific namespaces to view application logs — that wasn't optional, it was the cluster's way of saying "your team's stuff lives here, other teams' stuff is over there." This chapter explains why.
+Namespaces partition a cluster into isolated environments. You log into specific namespaces to view application logs — the cluster's way of saying "your team's stuff lives here, other teams' stuff is over there." This chapter explains why.
 
 ---
 
@@ -98,9 +98,7 @@ When the namespace is in the manifest, `kubectl apply -f` will place the resourc
 
 ## 4. Cross-namespace addressing — the DNS name format
 
-This is what your instructor breezed through. Worth slowing down because it's testable and used constantly in real apps.
-
-When you create a Service in Kubernetes, an internal DNS entry is auto-created so other pods can find it by name (no IP needed, even though service IPs change when services are recreated). The DNS server is **CoreDNS**, which runs in the `kube-system` namespace.
+Testable and used constantly in real apps. When you create a Service in Kubernetes, an internal DNS entry is auto-created so other pods can find it by name (no IP needed, even though service IPs change when services are recreated). The DNS server is **CoreDNS**, which runs in the `kube-system` namespace.
 
 ![DNS naming](./diagrams/29-dns-naming.png)
 
@@ -234,7 +232,7 @@ You can't install third-party tools on the exam, but for daily work it's worth h
 
 ## 7. Resource quotas — capping a namespace
 
-The instructor's last slide. ResourceQuota lets a cluster admin (or you, in your own lab) cap how much of the cluster a namespace can consume.
+ResourceQuota lets a cluster admin (or you, in your own lab) cap how much of the cluster a namespace can consume.
 
 ![Resource quotas](./diagrams/30-resource-quotas.png)
 
@@ -323,16 +321,16 @@ That tells you a LimitRange was active in the namespace and supplied defaults fo
 
 Some things from this chapter that should click into place:
 
-**Logging into namespaces at Visa.** When you logged into a cluster and ran `kubectl get pods -n <team-namespace>`, you weren't doing anything magical — you were just scoping to your team's slice of the cluster. The kubectl command itself is cluster-wide; the namespace is the filter.
+**Scoping with kubectl.** Running `kubectl get pods -n <team-namespace>` just scopes to your team's slice of the cluster. The kubectl command itself is cluster-wide; the namespace is the filter.
 
-**Naming conventions.** The production pod was in something like `enterprise-ops-dev`. That's a namespace name that encodes:
+**Naming conventions.** A production namespace like `enterprise-ops-dev` encodes:
 - `enterprise` — likely a Line-of-Business (LOB) identifier
 - `ops` — the team or platform
 - `dev` — the environment
 
 This is standard enterprise practice. Namespaces are how the cluster knows which team/environment a workload belongs to, which makes RBAC, quotas, network policies, monitoring, and cost attribution all possible at the namespace level.
 
-**Why the cross-app failure at Visa was so impactful.** When the OOM took down a node, pods from multiple namespaces went down with it — the node doesn't know or care about namespace boundaries. Namespaces are a logical boundary, not a physical one. Pods from different namespaces can land on the same node and affect each other through shared physical resources. This is why ResourceQuota + LimitRange + good `requests`/`limits` discipline matters: they make sure one team's runaway pod can't soak up resources another team needs.
+**Namespaces are a logical boundary, not a physical one.** If a node fails (e.g., an OOM), pods from multiple namespaces go down with it — the node doesn't know or care about namespace boundaries. Pods from different namespaces can land on the same node and affect each other through shared physical resources. This is why ResourceQuota + LimitRange + good `requests`/`limits` discipline matters: they make sure one team's runaway pod can't soak up resources another team needs.
 
 ---
 
@@ -368,23 +366,3 @@ kubectl delete namespace dev
 ```
 
 > **Warning on deleting namespaces:** `kubectl delete namespace dev` deletes the namespace AND every resource inside it — pods, deployments, services, configmaps, secrets, everything. It's recursive and irreversible. Triple-check before running this anywhere that matters.
-
----
-
-## Quick recall checklist
-
-- [ ] What are the four namespaces Kubernetes creates by default?
-- [ ] Why is it bad practice to deploy production apps to the `default` namespace?
-- [ ] What's the format of a fully-qualified service DNS name?
-- [ ] When can you use a short service name vs. when do you need the FQDN?
-- [ ] What does `kubectl get pods --all-namespaces` do, and what's the short flag for it?
-- [ ] How do you set the default namespace for your kubectl context?
-- [ ] What's the difference between ResourceQuota and LimitRange?
-- [ ] What happens if you try to create a pod that would push the namespace over its quota?
-- [ ] What command deletes everything in a namespace at once? (And why is it dangerous?)
-
----
-
-## Notes for next chapters
-
-Up next: **Imperative vs Declarative commands.** With everything you've built up — pods, ReplicaSets, Deployments, Namespaces — you now have a sense of the two approaches. Time to formalize: when to use `kubectl create/run/expose` directly, when to write YAML and `apply`, and how the `--dry-run=client -o yaml > file.yaml` trick combines the speed of imperative with the safety of declarative.

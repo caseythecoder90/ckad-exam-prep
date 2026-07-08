@@ -12,13 +12,12 @@ companion_diagrams:
 
 # Patches — Introduction, Types & Layout
 
-> **Context.** Transformers (Ch05: `commonLabels`, `namespace`, `namePrefix`, `images:` …)
-> are broad-brush — one rule rewrites a whole class of fields across every resource. A
-> **patch** is the opposite: a *surgical* edit aimed at one or more **specific** sections of a
-> targeted resource. This chapter is the patches **intro** — what a patch is, the three
-> parameters that define one, the **two patch types** (JSON6902 vs strategic merge), and the
-> **two layouts** (inline vs separate file). The per-operation mechanics live in the next two
-> chapters: **Ch07 (dictionaries)** and **Ch08 (lists)**.
+Transformers (Ch05: `commonLabels`, `namespace`, `namePrefix`, `images:` …)
+are broad-brush — one rule rewrites a whole class of fields across every resource. A
+**patch** is the opposite: a *surgical* edit aimed at one or more **specific** sections of a
+targeted resource. This chapter: what a patch is, the three parameters that define one, the
+**two patch types** (JSON6902 vs strategic merge), and the **two layouts** (inline vs separate
+file). Per-operation mechanics: **Ch07 (dictionaries)** and **Ch08 (lists)**.
 
 ---
 
@@ -190,66 +189,3 @@ kubectl kustomize overlays/dev        # or: kustomize build overlays/dev
 ```
 
 You hand-write the patch body; what's scriptable is registering it and verifying the render.
-
----
-
-## 7. JPMC / GKP grounding
-
-Patches are the overlay's surgical layer on a Kickstart-scaffolded base (Moneta Spring Boot app on
-GKP). The base is generated; the overlay then patches in the per-env / per-policy deltas a
-transformer can't express:
-
-- **`replicas`** per environment (dev 1 → prod N) is the canonical strategic-merge one-liner — and
-  it shows up in a PR as exactly `replicas: 2 → 3`, which matters for change control / audit.
-- **Surgical field edits** (a single annotation, a `securityContext`, an `args` flag) ride on
-  patches; broad rewrites (`images:`, `namespace:`) stay with transformers.
-- **Separate-file patches** are the reviewable form the team prefers once a patch is more than a
-  line; trivial edits stay inline.
-- **Ordering with Jules:** `${variable}` substitution runs **before** Kustomize, so a patch `value:`
-  can be `${namespace}` / `${containerImageUri}` and arrive resolved — the "three techniques" hybrid
-  (Ch02), now at the patch layer.
-
----
-
-## TL;DR
-
-- A **patch** is a surgical edit to targeted resource(s); a transformer is a broad rewrite.
-- Three parameters (JSON6902 framing): **operation** (`add`/`remove`/`replace`), **target**
-  (`kind`/`group`-`version`/`name`/`namespace`/`labelSelector`/`annotationSelector`), **value**
-  (add & replace only).
-- Two **types**: **JSON6902** (explicit `op`+`path`+`value`, schema-free) and **strategic merge**
-  (a manifest fragment). Same result; pick by readability / CRD support.
-- Two **layouts**: **inline** under `patch: |-`, or a **separate file** (`path:`); orthogonal to type.
-- All under the unified **`patches:`** field (legacy `patchesStrategicMerge:`/`patchesJson6902:` are
-  superseded).
-
-## Quick recall
-
-- [ ] Patch vs transformer? → patch = surgical/targeted; transformer = broad rewrite.
-- [ ] Three patch parameters? → operation, target, value.
-- [ ] When is `value` omitted? → on `remove`.
-- [ ] Two patch types? → JSON6902 (op/path/value) and strategic merge (manifest fragment).
-- [ ] How does each find its target? → JSON6902 via `target:`; strategic merge via `metadata.name` in the fragment.
-- [ ] How does kustomize tell the two apart? → by the body's shape (auto-detect).
-- [ ] Inline vs separate file — does it change output? → No, organisation only.
-- [ ] Unified field vs legacy? → `patches:` (modern); `patchesStrategicMerge:`/`patchesJson6902:` (legacy).
-- [ ] Does `replace` work on a missing path? → No — it must already exist.
-
-## Resolved threads
-
-- *(From Ch02 open thread) Patch mechanisms — strategic-merge vs JSON6902?* → Two equivalent ways to
-  express a patch; JSON6902 is explicit-op/structural, strategic merge is manifest-shaped. Detailed
-  per-operation behaviour is Ch07/Ch08.
-- *Why did the "3 parameters" framing feel JSON6902-shaped?* → Because it is; strategic merge has no
-  explicit op/path.
-
-## Open threads
-
-- [ ] **Ch07 — dictionaries:** add/replace/remove on map fields; strategic-merge `null` deletion;
-      JSON-Pointer `~1`/`~0` escaping. *(already written)*
-- [ ] **Ch08 — lists:** positional JSON6902 (`/0`, `/-`) vs keyed strategic merge; `$patch: delete`;
-      scalar-list replace caveat. *(already written)*
-- [ ] **Overlays** — the section's closing lectures (per course order): how overlays reference a base,
-      compose deltas, and the end-to-end base→overlay build. → next chapter (Ch09).
-- [ ] **`jules.yml` end-to-end trace** still owed: `jules.yml → ${variable} injection → kustomize
-      build → rendered manifest` (`${containerImageUri}`, `${namespace}`), pending the file share.

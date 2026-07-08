@@ -114,8 +114,7 @@ These are compiled into kube-apiserver and toggled via flags.
 
 ### The NamespaceExists / NamespaceAutoProvision example
 
-The instructor walks through this pair explicitly because it shows the
-admission controller design space clearly:
+This pair shows the admission controller design space clearly:
 
 ```bash
 # With NamespaceExists enabled (default-ish):
@@ -245,77 +244,3 @@ has no registry access. It's a defense-in-depth control.
 `ImagePolicyWebhook` is a built-in controller with its own configuration file
 (separate from `MutatingAdmissionWebhook`). Don't conflate them on the exam.
 Next chapter covers `MutatingAdmissionWebhook` and `ValidatingAdmissionWebhook`.
-
----
-
-## 8. JPMC context
-
-The connection to your daily work is direct. JPMC's Kubernetes platform almost
-certainly uses several admission controllers to enforce enterprise policy:
-
-- **`AlwaysPullImages`** is a near-universal enterprise requirement. It ensures
-  your pods always pull from the internal registry at schedule time, preventing
-  stale or compromised cached images from running.
-
-- **`ImagePolicyWebhook`** (or an OPA Gatekeeper equivalent) is likely enforcing
-  that all images come from JPMC's internal Artifactory/Harbor registry rather
-  than public Docker Hub. When you try to deploy an image like `ubuntu:latest`
-  that references Docker Hub, the admission webhook rejects it — and you have to
-  use the internal mirror.
-
-- **`ResourceQuota` + `LimitRanger`** are almost certainly active in your SEAL
-  namespace. The resource limits your team sets in Spring Boot pod specs aren't
-  just guidelines — LimitRanger enforces defaults when you omit them, and
-  ResourceQuota caps total namespace consumption.
-
-- **`NodeRestriction`** is a CKS-level concern but relevant to your multi-team
-  cluster context: it prevents kubelets from escalating their own privileges
-  by tampering with Node and Pod objects they don't own. This is how JPMC's
-  platform prevents one team's node failure from cascading into another team's
-  namespace (a scenario you've hit before).
-
-- The cascading memory-limit evictions you've experienced: `LimitRanger` +
-  `ResourceQuota` working together is what prevents a single misbehaving pod
-  from blowing through a node's memory and triggering the OOMKiller cascade.
-  If LimitRange defaults weren't set, pods with no `resources.limits` could
-  consume unbounded memory.
-
----
-
-## 9. TL;DR
-
-- Admission controllers are the third gate in the kube-apiserver pipeline:
-  after auth/z, before etcd write.
-- They can **validate** (accept/reject) and/or **mutate** (modify) objects —
-  RBAC can do neither of those things for content.
-- Built-in controllers are enabled/disabled via `--enable-admission-plugins`
-  and `--disable-admission-plugins` in the apiserver config.
-- In kubeadm clusters, editing `/etc/kubernetes/manifests/kube-apiserver.yaml`
-  is how you toggle them; kubelet restarts the static pod automatically.
-- `NamespaceLifecycle` supersedes the older `NamespaceExists` and
-  `NamespaceAutoProvision` controllers.
-- Mutating controllers run before validating ones — validators always see the
-  post-mutation object.
-- The webhook-based controllers (`MutatingAdmissionWebhook`,
-  `ValidatingAdmissionWebhook`) are the extensibility point for custom policy;
-  they're covered next chapter.
-
----
-
-## Open threads
-
-- [ ] **MutatingAdmissionWebhook + ValidatingAdmissionWebhook**: the next
-  chapter covers these in depth — the mechanics of calling out to an external
-  HTTP service, the webhook configuration manifest, and how failure policy
-  works.
-- [ ] **OPA Gatekeeper** (CKS scope): production clusters at scale replace
-  individual built-in controllers with a policy engine. Gatekeeper uses
-  `ValidatingAdmissionWebhook` under the hood and adds a CRD-based policy
-  language (Rego). Flag for CKS study.
-- [ ] **Pod Security Admission** (PSA): replaced PodSecurityPolicy (removed in
-  1.25). Enforces `restricted`, `baseline`, and `privileged` profiles at the
-  namespace level. Relevant to CKS; surfaces occasionally on CKAD.
-
-## Resolved threads
-
-- (none from prior chapters resolved here)

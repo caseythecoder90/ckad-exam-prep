@@ -1,15 +1,8 @@
 # Deployment Strategies: Canary
 
-> **Section:** 05-pod-design
-> **Course chapter:** 4 (Deployment Strategies - Canary)
-> **Why this is in CKAD:** Like blue/green, canary is a *pattern* built from primitives, not a `strategy.type`. The testable mechanic is the shared-label + pod-ratio trick and understanding why native primitives can only split traffic by pod count.
-> **Companion files:** `03-blue-green-deployment.md` (the other manual strategy; same Service-selector toolkit); `02-deployment-updates-rollbacks.md` (the promotion step is a normal RollingUpdate); `01-labels-selectors-annotations.md` (the whole thing hinges on a shared label)
-
----
-
 ## 1. What canary is
 
-Release the new version to a **small slice of live traffic first**, watch it, and only widen once it proves healthy. The instructor's flow:
+Release the new version to a **small slice of live traffic first**, watch it, and only widen once it proves healthy. The flow:
 
 1. Deploy the new version (the **canary**) alongside the current one.
 2. Route only a **small percentage** of real traffic to it; keep the rest on the stable version.
@@ -20,17 +13,17 @@ The name comes from "canary in a coal mine" - a small early-warning probe that t
 
 ![Canary: shared label puts both versions behind one Service; pod ratio sets the split](./diagrams/04-canary-deployment.png)
 
-### Your mental model was actually the richer one
+### Progressive vs simplified canary
 
-You remembered it as "a little more, then a little more, until 100% is on the new version." That is **progressive (incremental) canary** - 10% -> 25% -> 50% -> 100% - and it is how real-world canary tooling (Argo Rollouts, Flagger, Istio) does it, with automated analysis at each step. The lecture shows the **simplified** canary: one small slice -> validate -> promote the rest in a single step. Both are legitimately "canary"; the lecture picks the variant that works with plain Kubernetes primitives. So you didn't misremember - you described the more capable form. And yes: there are many ways to do it (manual step-ups, automated analysis gates, time-based promotion, metric-triggered rollback).
+**Progressive (incremental) canary** - 10% -> 25% -> 50% -> 100% - is how real-world canary tooling (Argo Rollouts, Flagger, Istio) does it, with automated analysis at each step. The **simplified** canary is: one small slice -> validate -> promote the rest in a single step. Both are legitimately "canary"; the simplified variant is the one that works with plain Kubernetes primitives. There are many ways to do it (manual step-ups, automated analysis gates, time-based promotion, metric-triggered rollback).
 
 ## 2. The CKAD way: shared label + pod ratio
 
-Canary with vanilla primitives solves two problems (the instructor's two goals):
+Canary with vanilla primitives solves two problems:
 
 **Goal 1 - route traffic to *both* versions.** Give the pods in *both* deployments a **common label** (e.g. `app: front-end`) and point the Service selector at *that* shared label. Now the Service's endpoints include pods from both deployments, so traffic spreads across both.
 
-**Goal 2 - send only a *small* percentage to the new version.** A Service load-balances roughly evenly **across all matching pods**. So the split is governed entirely by **how many pods each deployment runs**. Give the primary 5 pods and the canary 1 pod, and ~1 in 6 requests hits the canary - an **~83% / 17%** split (image 6).
+**Goal 2 - send only a *small* percentage to the new version.** A Service load-balances roughly evenly **across all matching pods**. So the split is governed entirely by **how many pods each deployment runs**. Give the primary 5 pods and the canary 1 pod, and ~1 in 6 requests hits the canary - an **~83% / 17%** split.
 
 ### The label scheme (the key detail)
 
@@ -94,7 +87,7 @@ spec:
     app: front-end                  # selects BOTH deployments' pods
 ```
 
-> Caveat the instructor flags about the matching labels: because both deployments share `app: front-end`, you have to be a little careful that each Deployment's `selector.matchLabels` still uniquely owns its own pods in practice. The slide keeps both selectors on `app: front-end` for simplicity; in the real world you would typically include the `version` label in each Deployment's own `matchLabels` (`app: front-end` + `version: vN`) so a Deployment never tries to adopt the other's pods, while the *Service* selects only on the shared `app: front-end`. Either way, the Service-level selector is the shared label.
+> Caveat about the matching labels: because both deployments share `app: front-end`, you have to be careful that each Deployment's `selector.matchLabels` still uniquely owns its own pods in practice. Keeping both selectors on `app: front-end` works for simplicity; in the real world you would typically include the `version` label in each Deployment's own `matchLabels` (`app: front-end` + `version: vN`) so a Deployment never tries to adopt the other's pods, while the *Service* selects only on the shared `app: front-end`. Either way, the Service-level selector is the shared label.
 
 ## 3. Promote and clean up
 
@@ -111,9 +104,9 @@ kubectl delete deployment myapp-canary
 
 ## 4. The hard limit of native primitives
 
-The instructor's important caveat: with **only** Kubernetes primitives + a Service, traffic distribution is **always governed by the pod count**. You cannot ask for an arbitrary percentage. To send ~1% to the canary you would need something like **100 primary pods to 1 canary pod** - the granularity is "1 / total pods," so fine-grained splits are impractical.
+With **only** Kubernetes primitives + a Service, traffic distribution is **always governed by the pod count**. You cannot ask for an arbitrary percentage. To send ~1% to the canary you would need something like **100 primary pods to 1 canary pod** - the granularity is "1 / total pods," so fine-grained splits are impractical.
 
-This is exactly the gap a **service mesh** (Istio, Linkerd - see the blue/green file) fills: a mesh routes by **weight**, so you can declare "99% primary / 1% canary" with *one* pod each, and shift the weight progressively without touching replica counts. That weighted routing is why true progressive canary (your original mental model) needs a mesh or a controller like Argo Rollouts/Flagger - not on CKAD, but the reason the native approach feels coarse.
+This is exactly the gap a **service mesh** (Istio, Linkerd - see the blue/green file) fills: a mesh routes by **weight**, so you can declare "99% primary / 1% canary" with *one* pod each, and shift the weight progressively without touching replica counts. That weighted routing is why true progressive canary needs a mesh or a controller like Argo Rollouts/Flagger - not on CKAD, but the reason the native approach feels coarse.
 
 | | Native primitives (CKAD) | Service mesh (Istio etc.) |
 |---|---|---|
@@ -163,19 +156,3 @@ kubectl set image deployment/myapp-primary app-container=myapp-image:2.0
 kubectl rollout status deployment/myapp-primary
 kubectl delete deployment myapp-canary
 ```
-
-## 8. TL;DR / takeaways
-
-- **Canary** = release the new version to a **small slice of live traffic**, validate under real load, then promote the primary to the new version and delete the canary.
-- Native implementation: a **shared label** (`app: front-end`) on both deployments' pods + a **Service that selects that shared label**, so traffic spreads across both; the **pod-count ratio** sets the split (5:1 ≈ 83/17).
-- Pods carry **two labels**: shared (Service selects) + version (distinguishes). The Service must select the **shared** one.
-- **Native split is coarse** - granularity is 1/(total pods); arbitrary percentages (1%) need a **service mesh** (Istio/Linkerd) doing weighted routing, or a controller like Argo Rollouts/Flagger.
-- Your "step it up gradually to 100%" memory = **progressive canary**, the richer real-world form (mesh/controller-driven); the lecture shows the simplified one-step-promote variant.
-- Promote with a RollingUpdate of the primary, then `kubectl delete` the canary. No `strategy.type: Canary` exists.
-
----
-
-### Open threads
-- [ ] **Service meshes / Argo Rollouts / Flagger** - the tools that do weighted + progressive canary; revisit if work or a later course uses them (Visa interview question, now answered).
-- [ ] Tie back to `02-deployment-updates-rollbacks.md`: the promotion step is just a primary RollingUpdate + revision bump.
-- [ ] Practice: build primary(5)/canary(1) + shared-label Service in the kind cluster; confirm `kubectl get endpoints` lists 6 IPs and watch the ~83/17 split.

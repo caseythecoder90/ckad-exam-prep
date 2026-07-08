@@ -1,6 +1,6 @@
 # 08 — Services (NodePort)
 
-> Services are the network glue of Kubernetes. They give pods stable addresses so users and other applications can reach them — even when pods come and go. This chapter covers the *why* of Services and focuses on **NodePort**, the type you use to expose pods to the outside world. ClusterIP and LoadBalancer get their own chapter.
+Services are the network glue of Kubernetes. They give pods stable addresses so users and other applications can reach them — even when pods come and go. This chapter covers the *why* of Services and focuses on **NodePort**, the type you use to expose pods to the outside world. ClusterIP and LoadBalancer get their own chapter.
 
 ---
 
@@ -31,13 +31,13 @@ Services also **enable loose coupling**. Your web app doesn't need to know the I
 | **NodePort** | Outside, via any node's IP on a specific port | Quick external access, on-prem clusters, labs |
 | **LoadBalancer** | Outside, via a cloud LB | Production external traffic on AWS/GCP/Azure clusters |
 
-The instructor mentioned all three; this chapter is **NodePort**. The next chapter covers ClusterIP in depth. LoadBalancer is essentially "NodePort + an automatic cloud load balancer in front" — same concepts, different external entry point.
+This chapter is **NodePort**. The next chapter covers ClusterIP in depth. LoadBalancer is essentially "NodePort + an automatic cloud load balancer in front" — same concepts, different external entry point.
 
 ---
 
 ## 3. The three ports in NodePort
 
-This is the part that confused you, and confuses almost everyone. The naming convention is "from the Service's perspective" — once you internalize that, the names make sense.
+The naming convention is "from the Service's perspective" — once you internalize that, the names make sense.
 
 ![Three ports](./diagrams/32-nodeport-three-ports.png)
 
@@ -146,7 +146,7 @@ The rule: **every key/value under the pod's `labels:` must appear under the serv
 
 ### Step-by-step workflow
 
-This is what the instructor described as "copy the labels into the service definition."
+Copy the labels into the service definition.
 
 **Step 1: Pod has labels**
 ```yaml
@@ -230,7 +230,7 @@ This is the network half of what makes the production pod from chapter 4 actuall
 
 ## 7. Multiple pods — load balancing automatically
 
-The instructor's example mapped a Service to one pod. In production you always have multiple pods for reliability. The good news: **you don't change anything in the Service definition.**
+In production you always have multiple pods for reliability. The good news: **you don't change anything in the Service definition.**
 
 ![Multi-pod NodePort](./diagrams/34-nodeport-multi-pod.png)
 
@@ -256,7 +256,7 @@ Three endpoints — the Service is load-balancing across three pods.
 
 ## 8. Multiple nodes — the Service spans the cluster
 
-This is the part you got excited about, and rightly so. It's one of the elegant things about Kubernetes networking.
+One of the elegant things about Kubernetes networking.
 
 ![NodePort cluster-wide](./diagrams/35-nodeport-cluster-spanning.png)
 
@@ -278,20 +278,18 @@ curl http://192.168.1.3:30008      # hits Node 2, routed to some pod
 curl http://192.168.1.4:30008      # hits Node 3, routed to some pod
 ```
 
-They all reach an instance of the application. Some requests might be served by a pod on the same node they hit; others bounce across the internal cluster network to a pod on a different node. **The user doesn't know or care.**
-
-This is what made the instructor's slide so striking — that orange "Service" bar visually spans across all the nodes. The service is a logical entity, not a thing that lives on one specific node.
+They all reach an instance of the application. Some requests might be served by a pod on the same node they hit; others bounce across the internal cluster network to a pod on a different node. **The user doesn't know or care.** The service is a logical entity, not a thing that lives on one specific node.
 
 ### How does kube-proxy do this?
 
-Quick mention because you're curious about internals. **kube-proxy** runs on every node (you saw it in chapter 1's worker node components). When the Service is created, the controllers tell each kube-proxy to install routing rules. These rules use **iptables** (or **IPVS**, depending on cluster config) to:
+**kube-proxy** runs on every node (you saw it in chapter 1's worker node components). When the Service is created, the controllers tell each kube-proxy to install routing rules. These rules use **iptables** (or **IPVS**, depending on cluster config) to:
 
 - Listen for traffic on the nodePort
 - Match against the service's ClusterIP and port
 - Pick one of the endpoints (the matching pods)
 - Rewrite the destination address and forward the packet
 
-When pods are created, deleted, or updated, the endpoints change. kube-proxy updates its rules automatically. This is why "when pods are updated or deleted the services are automatically updated" — there's nothing magic; it's just kube-proxy reacting to API events. This is also a great example of what's worth digging into if you want to learn Kubernetes internals (and a great reason to learn Go down the line).
+When pods are created, deleted, or updated, the endpoints change. kube-proxy updates its rules automatically — there's nothing magic; it's just kube-proxy reacting to API events.
 
 ---
 
@@ -374,24 +372,3 @@ kubectl run test --image=busybox --rm -it --restart=Never -- wget -O- <service-n
 # Delete
 kubectl delete service <name>
 ```
-
----
-
-## Quick recall checklist
-
-- [ ] What problem does a Service solve that direct pod IPs don't?
-- [ ] What are the three Service types and when do you use each?
-- [ ] In a NodePort service, what are the three port fields and what does each represent?
-- [ ] What range must `nodePort` be in?
-- [ ] What happens if you omit `targetPort`? What about `nodePort`?
-- [ ] How does a Service know which pods to route to?
-- [ ] What's the rule about pod labels and service selectors?
-- [ ] What does `kubectl get endpoints <service>` show you?
-- [ ] In a multi-node cluster, on how many nodes is the nodePort open?
-- [ ] What component on each node actually routes the traffic to pods?
-
----
-
-## Notes for next chapters
-
-Up next: **ClusterIP Services** — the default type, used for internal pod-to-pod communication. Same selector mechanism, different addressing (cluster-internal virtual IP plus DNS name like the `db-service.dev.svc.cluster.local` format from chapter 7). After that, LoadBalancer (which is just NodePort + a cloud LB in front).

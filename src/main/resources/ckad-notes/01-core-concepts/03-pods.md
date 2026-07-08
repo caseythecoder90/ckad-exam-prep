@@ -1,6 +1,6 @@
 # 03 — Pods
 
-> Pods are the fundamental unit of work in Kubernetes. You don't deploy containers directly to nodes — you deploy pods, and pods contain containers. This is the most-used object on the CKAD exam.
+Pods are the fundamental unit of work in Kubernetes. You don't deploy containers directly to nodes — you deploy pods, and pods contain containers. This is the most-used object on the CKAD exam.
 
 ---
 
@@ -108,7 +108,7 @@ Two key rules:
 1. **One app instance = one pod.** If you need three instances of your app, you need three pods.
 2. **The scheduler places each new pod on a node.** Pods can land on any worker node with capacity. Multiple pods of the same app might end up on one node, or spread across several — that's the scheduler's call.
 
-The instructor was deliberately ignoring networking and load balancing for this lesson — those come later (services). For now, just internalize: scaling means more pods.
+Networking and load balancing come later (services). For now: scaling means more pods.
 
 ---
 
@@ -463,30 +463,3 @@ kubectl delete pod -l app=web                                 # by label selecto
 kubectl delete pods --all                                     # all pods in current ns
 kubectl delete pod <name> --force --grace-period=0            # force (or use $now)
 ```
-
----
-
-## Quick recall checklist
-
-- [ ] Why do pods exist? What problem do they solve that running containers directly on a node creates?
-- [ ] What do containers in the same pod share by default?
-- [ ] Are most pods single-container or multi-container?
-- [ ] How do you scale up the number of running app instances? (Hint: it's NOT by adding containers to a pod.)
-- [ ] What command creates a pod imperatively in one line?
-- [ ] What does `--dry-run=client -o yaml` do, and why is it valuable on the exam?
-- [ ] What are the four required top-level fields in any pod manifest?
-- [ ] What does `READY 0/1 STATUS ContainerCreating` mean?
-- [ ] If I don't have the pod's YAML file, how do I extract it from the cluster?
-- [ ] Which fields can I change on a live pod, and which require delete-and-recreate?
-- [ ] What does `kubectl edit pod <name>` do, and when does it fail?
-- [ ] Why is editing a Deployment more flexible than editing a Pod?
-- [ ] How do I delete a pod by name? By the file I applied? By label?
-- [ ] What does `Terminating` status mean and how long does it normally last?
-- [ ] Why does a pod sometimes "come back" after I delete it, and what do I delete instead?
-- [ ] When is `--force --grace-period=0` (the `$now` alias) the right answer, and when is it dangerous?
-
----
-
-## Notes for next chapters
-
-Up next: ReplicaSets and Deployments — the controllers that manage pods for you (so you don't have to manually `kubectl run` ten times to scale, and so dead pods get replaced automatically).

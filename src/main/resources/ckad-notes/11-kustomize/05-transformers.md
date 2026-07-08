@@ -48,8 +48,8 @@ built-in families here:
 
 ![One kustomization.yaml with namePrefix/nameSuffix/namespace/commonLabels/commonAnnotations and color-coded arrows showing each landing in a rendered Service](./diagrams/10-common-transformers.png)
 
-> Slide nit: KodeKloud writes "commonLabel" (singular). The real fields are
-> **`commonLabels`** and **`commonAnnotations`** (plural) — build fails otherwise.
+> The real fields are **`commonLabels`** and **`commonAnnotations`** (plural) —
+> build fails otherwise. Don't write them singular.
 
 ### Each one, concretely
 
@@ -165,86 +165,3 @@ kubectl kustomize .            # render and verify the transforms landed
 ```
 
 Always render (`kubectl kustomize <dir>`) and eyeball the output before applying.
-
----
-
-## JPMC / GKP grounding — the image transformer is the one you live in
-
-The dev overlay from ch.03/04 carries this block, and it's a textbook image
-transformer fused with pipeline injection:
-
-```yaml
-images:
-  - name: app-image                 # placeholder image name used in the base
-    newName: ${containerImageUri}    # real registry URI, injected by Jules
-```
-
-The pattern, and why it's good practice:
-
-- The **base** Deployment references a **placeholder image name** (`app-image`),
-  *not* a hardcoded registry path or tag. The base stays environment- and
-  build-agnostic.
-- The overlay's **image transformer** matches `app-image` and rewrites it to the
-  real image via `newName: ${containerImageUri}`.
-- **`${containerImageUri}` is not Kustomize** — it's resolved by **Jules**
-  (your CI/CD config) at pipeline time, supplying the actual registry path + tag/
-  digest for *this* build. (Image transformer = technique #1; `${...}` injection =
-  technique #3, from ch.02 §5.)
-- Net effect: promoting across dev → uat → prod is the **same base** with a
-  **different injected URI** — CI owns the image, the manifests never hardcode it.
-
-> This is also where **`kickstart`** comes in: it's JPMC's web scaffolder — pick
-> an app type (e.g. a **Moneta** app, JPMC's Spring Boot extension layer) and a
-> platform (**GKP**), and it generates the repo, the base, and the per-env
-> overlays (including exactly this `images:`/`namespace:`/`configMapGenerator`
-> wiring). That's why your overlay looked "already done" — kickstart wrote it.
-> The course covers the overlay structure it generates later in this section.
-
-The two common transformers that matter operationally in your SEAL-ID /
-namespace-scoped RBAC world: **`namespace`** must resolve to your project's real
-namespace (RBAC is namespace-scoped, AD-group RoleBindings are tied to it — a
-wrong `${namespace}` lands resources where you have no permissions), and
-**`commonLabels`/`commonAnnotations`** are the home for org/SEAL-ID/cost-centre
-metadata that platform + FinOps tooling key off.
-
-> CKAD scope: field names and what each transforms are fair game (incl. `images:`
-> with `newName`/`newTag`). The `${...}`/kickstart/Moneta specifics are GKP flavour.
-
----
-
-## TL;DR
-
-- Transformers change configs at `build`; spectrum is **blanket** (common) →
-  **targeted** (image) → **surgical** (patches, next).
-- Common: `commonLabels` (labels **+ selectors + template** — immutable-selector
-  hazard), `commonAnnotations` (annotations only, safe), `namespace`,
-  `namePrefix`/`nameSuffix` (wrap names, **auto-update references**).
-- Image: `images: { name, newName, newTag, digest }` — matches the **image name**
-  (not container name), rewrites it everywhere; `kustomize edit set image …`.
-- Your GKP overlay's `images: name: app-image / newName: ${containerImageUri}` is
-  the image transformer + Jules injection — base uses a placeholder image, CI sets
-  the real one per build/env.
-
-## Quick recall
-
-- [ ] Four common transformers? → `commonLabels`, `commonAnnotations`, `namespace`, `namePrefix`/`nameSuffix`.
-- [ ] Which rewrites selectors (risky on live Deployments)? → `commonLabels`.
-- [ ] Safe metadata one? → `commonAnnotations`.
-- [ ] Does `namePrefix` change labels/selectors? → no, only `metadata.name` (+ references).
-- [ ] Image transformer field? → `images:` with `name` (match) + `newName`/`newTag`/`digest`.
-- [ ] Does `images.name` match the container name? → no, the **image** name.
-- [ ] Imperative image change? → `kustomize edit set image nginx=haproxy:2.4`.
-- [ ] GKP image pattern? → base placeholder `app-image` → `newName: ${containerImageUri}` (Jules-injected).
-
-## Resolved threads
-
-- *commonLabels behaviour* — covered across ch.03 + here.
-- *Image transformer (`images:` with `newName`/`newTag`/`digest`)* — covered (was an open thread).
-
-## Open threads (carried into ch.06+)
-
-- [ ] **Patches** (grouped, multiple lectures): strategic-merge patch vs JSON6902
-      patch — modifying *specific* fields surgically.
-- [ ] `replacements:` (modern replacement for the old `vars:`).
-- [ ] Full `jules.yml → injected → kustomize build → rendered` trace — pending the `jules.yml`
-      (we now have both the `images:` and `namespace:` injection points mapped).

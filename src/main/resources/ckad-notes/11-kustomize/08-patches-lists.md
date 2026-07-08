@@ -13,17 +13,16 @@ companion_diagrams:
 
 # Patches — Lists (replace / add / delete)
 
-> **Context.** Ch07 patched **dictionaries** (map fields like `metadata.labels`). Lists —
-> `spec.template.spec.containers`, `volumes`, `env`, `args` — behave differently enough to
-> warrant their own chapter. The split that mattered for dicts (JSON6902 vs strategic
-> merge) returns here, but the *defining* difference is **how each engine identifies the
-> element you mean**:
->
-> - **JSON6902 is positional** — the path ends in an **index** (`/0`, `/1`) or `-`.
-> - **Strategic merge is keyed** — it matches list-of-map elements by a **merge key**
->   (for `containers`, that key is `name`).
->
-> That single distinction drives every behaviour and every gotcha below.
+Ch07 patched **dictionaries** (map fields like `metadata.labels`). Lists —
+`spec.template.spec.containers`, `volumes`, `env`, `args` — behave differently. The
+JSON6902-vs-strategic-merge split returns here, but the *defining* difference is **how
+each engine identifies the element you mean**:
+
+- **JSON6902 is positional** — the path ends in an **index** (`/0`, `/1`) or `-`.
+- **Strategic merge is keyed** — it matches list-of-map elements by a **merge key**
+  (for `containers`, that key is `name`).
+
+That single distinction drives every behaviour and every gotcha below.
 
 ---
 
@@ -200,72 +199,3 @@ kustomize edit add patch \
 # ALWAYS confirm list order + the applied change before applying:
 kubectl kustomize overlays/dev | less        # check containers[] order and contents
 ```
-
----
-
-## 8. JPMC / GKP grounding
-
-List patches are the **sidecar story** on the team's Kickstart-scaffolded bases:
-
-- **Adding a sidecar** (an Envoy proxy, a log shipper, a secrets agent) to a base Deployment
-  is a list-add. The safe form is a **strategic-merge append keyed by `name`** — a new
-  container with a unique name merges in without touching the app container. A JSON6902 `…/-`
-  append also works, but in an environment where other overlays/injectors also add
-  containers, the **keyed** approach won't get tripped by index shifts.
-- **Dropping a sidecar in one environment** (e.g. removing a debug/trace container in prod)
-  is **`$patch: delete`** by container name — surgical and order-independent.
-- **Editing a single container field** across envs (a flag in `args`, a different image tag
-  not covered by the `images:` transformer) — remember `args` is a **scalar list**: strategic
-  merge would replace the whole `args`, so JSON6902 by index is usually the cleaner edit.
-- **Ordering with Jules** is unchanged: `${variable}` substitution runs **before** Kustomize,
-  so a patched `value:` (an image, a namespace, a flag) can be `${...}` and arrive resolved.
-
-Division of labour stays: `images:`/`namespace:` **transformers** for the broad strokes,
-**patches** for container-level surgery a transformer can't express.
-
----
-
-## TL;DR
-
-- Lists differ from dicts by **how the element is identified**: JSON6902 by **index**,
-  strategic merge by **merge key** (`containers`→`name`).
-- JSON6902: `…/-` appends, `…/<i>` inserts (shifts), `replace …/<i>` swaps the whole element,
-  `remove …/<i>` deletes by index. Edit one field via `…/<i>/field`.
-- Strategic merge: name the element to edit/add; delete with **`$patch: delete`** (the
-  list-level `key: null`).
-- **Indexes are brittle** under reordering/sidecar injection; **keys are stable**.
-- **Scalar lists** (`args`, `command`) have **no merge key** → strategic merge **replaces the
-  whole list**; edit individual entries with JSON6902 indices.
-
-## Quick recall
-
-- [ ] JSON6902 list path ends in…? → an **index** or **`-`** (append).
-- [ ] Append a container with JSON6902? → `op: add`, `path: …/containers/-`.
-- [ ] `add /containers/0` vs `replace /containers/0`? → add **inserts & shifts**; replace **overwrites in place**.
-- [ ] Edit just the image of container 0 (JSON6902)? → `path: …/containers/0/image`.
-- [ ] How does strategic merge find a container? → by **merge key `name`**.
-- [ ] Delete a container with strategic merge? → `$patch: delete` on the named element.
-- [ ] Why `$patch: delete` (not omission)? → merge is additive; can't infer deletion.
-- [ ] What happens to `args:` under a strategic-merge patch? → the **whole list is replaced** (no merge key).
-- [ ] Which engine survives list reordering? → **strategic merge** (keyed), not JSON6902 (positional).
-
-## Resolved threads
-
-- *(From Ch07) JSON6902 list add — `-` vs index?* → `-` appends to the end; an explicit index
-  inserts there and shifts the rest.
-- *(From Ch07) Strategic-merge list delete needs a directive?* → yes, `$patch: delete` on the
-  keyed element — the list analogue of `key: null`.
-- *Why does strategic merge sometimes clobber a whole list?* → scalar lists have no merge key,
-  so the default `patchStrategy` is `replace`.
-
-## Open threads
-
-- [ ] **`replacements:`** — the modern successor to `vars:` (copy a value from one field into
-      another, e.g. propagate an image tag or a name across resources). Likely the next lecture.
-- [ ] Generators: `configMapGenerator` / `secretGenerator` and the **name-hash suffix**
-      behaviour (and `disableNameSuffixHash`), plus `generatorOptions`.
-- [ ] **Components** (`kind: Component`) for reusable, composable overlay fragments — if the
-      course covers them before the section wrap-up.
-- [ ] **`jules.yml` end-to-end trace** still owed: `jules.yml → ${variable} injection →
-      kustomize build → rendered manifest` (`${containerImageUri}`, `${namespace}`), pending
-      the file share.

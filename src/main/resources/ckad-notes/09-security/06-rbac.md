@@ -131,7 +131,7 @@ Namespace: finance
   dev-user has NO access here unless another Role+RoleBinding exists
 ```
 
-This is exactly how JPMC scopes your team's access: the platform team creates Roles in namespaces matching your SEAL ID, then creates RoleBindings that bind your AD group to those Roles. You can operate in your namespaces because your AD group membership (embedded in your JWT from `klogin`) matches a subject in those RoleBindings.
+This is how enterprises scope team access: a platform team creates Roles in team namespaces, then creates RoleBindings that bind an AD group to those Roles. A user can operate in those namespaces because their AD group membership (embedded in the login JWT) matches a subject in those RoleBindings.
 
 ---
 
@@ -174,7 +174,7 @@ roleRef:
 | `ClusterRole` | `RoleBinding` | Only one namespace (reuse without recreating) |
 | `Role` | `ClusterRoleBinding` | Not allowed (error) |
 
-**The third row is powerful:** define a ClusterRole once (e.g., "developer") and use namespace-scoped RoleBindings to grant it in specific namespaces. No need to recreate identical Roles in every namespace. This is what JPMC's platform team almost certainly does.
+**The third row is powerful:** define a ClusterRole once (e.g., "developer") and use namespace-scoped RoleBindings to grant it in specific namespaces. No need to recreate identical Roles in every namespace. This is the common enterprise platform pattern.
 
 ### Built-in ClusterRoles
 
@@ -240,9 +240,7 @@ kubectl auth can-i --list --as dev-user -n default
 kubectl auth can-i list pods --as system:serviceaccount:default:my-sa
 ```
 
-**Use this constantly on the exam.** After creating any Role or binding, verify it with `auth can-i`. It's instant, it's correct, and it saves you from debugging failed operations later.
-
-**At JPMC:** `kubectl auth can-i --list` will show you every permission your AD groups give you in your current namespace. Useful for understanding what you're actually allowed to do.
+**Use this constantly on the exam.** After creating any Role or binding, verify it with `auth can-i`. It's instant, it's correct, and it saves you from debugging failed operations later. `kubectl auth can-i --list` shows every permission your identity's groups grant in the current namespace.
 
 ---
 
@@ -341,18 +339,3 @@ kubectl create role developer --verb=get,list --resource=pods \
 - **ServiceAccount subjects need `namespace:`** — when binding a ServiceAccount in a different namespace, the `namespace` field on the subject is required.
 - **`kubectl auth can-i` uses your current kubeconfig user** — if you switch context or `--as`, it uses that identity instead.
 - **Verify after creating** — always follow `kubectl create role` + `kubectl create rolebinding` with `kubectl auth can-i <verb> <resource> --as <user>`.
-
----
-
-## TL;DR
-
-RBAC requires two objects: a Role (what is allowed) and a RoleBinding (who gets it). Roles list rules: `apiGroups`, `resources`, `verbs`. Core group = `apiGroups: [""]`. ClusterRoles and ClusterRoleBindings work cluster-wide or for non-namespaced resources. A ClusterRole bound via a namespace RoleBinding grants access only in that namespace — this is the platform pattern at JPMC where one ClusterRole definition gets reused across many team namespaces. `resourceNames` restricts to specific named objects. `kubectl auth can-i` is the verification tool; use it constantly on the exam. Built-in ClusterRoles (`cluster-admin`, `admin`, `edit`, `view`) exist and can be bound without writing Role YAML.
-
----
-
-## Open Threads
-
-- [ ] ServiceAccounts deep dive — how pods get auto-mounted tokens, disabling automount, when to use custom SAs (ch07 or standalone)
-- [ ] Admission controllers — the third gate after AuthN/AuthZ; ValidatingWebhookConfiguration often used with RBAC to enforce additional constraints
-- [ ] OPA/Gatekeeper — when RBAC isn't expressive enough; Rego policies for multi-tenant enforcement
-- [ ] Auditing RBAC — `kubectl auth reconcile`, finding over-privileged subjects, `rakkess` / `rbac-lookup` tooling

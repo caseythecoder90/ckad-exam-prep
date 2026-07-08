@@ -1,16 +1,5 @@
 # Security Contexts
 
-> **Section:** 02-configuration
-> **Course chapter:** 07 (Security Contexts)
-> **Why this is in CKAD:** Directly examinable. Small set of fields, easy
-> exam wins once you internalize *what level each field is allowed at* and
-> *who wins when both levels are set*.
-> **Companion file:** `06-docker-security.md` — this chapter is the
-> Kubernetes surface for the Docker mechanics there. The §6 mapping table in
-> that chapter is the cheat sheet for this one.
-
----
-
 ## 1. What a Security Context is
 
 A **Security Context** is the field in a Pod or container spec that controls
@@ -72,9 +61,9 @@ spec:
           add: ["MAC_ADMIN"]
 ```
 
-This is the manifest from the instructor's slide. Note the indentation:
-`securityContext:` is at the same level as `name:` / `image:` / `command:` —
-i.e. a field of the *container*, not a field of the Pod.
+Note the indentation: `securityContext:` is at the same level as `name:` /
+`image:` / `command:` — i.e. a field of the *container*, not a field of the
+Pod.
 
 ### 2.3 Both — container wins for that container
 
@@ -118,8 +107,8 @@ concept from the previous chapter.
 | `capabilities: { add: [...], drop: [...] }` | **container only** | `--cap-add` / `--cap-drop` | Tune Linux capabilities |
 | `privileged: true` | container | `docker run --privileged` | Grant everything; last resort |
 
-> The one structural gotcha — flagged on the instructor's slide and worth
-> burning in: **`capabilities:` is only valid at container level.** Putting
+> The one structural gotcha worth burning in:
+> **`capabilities:` is only valid at container level.** Putting
 > it under `spec.securityContext:` (Pod level) is a manifest error. The
 > reason is that capabilities are a *per-process* concept and a Pod isn't a
 > process; only its containers are. Every other field on the table above
@@ -187,34 +176,3 @@ where `runAsUser` was forgotten or removed in a future edit.
     container-level `runAsUser` on that one container, leaving the others
     untouched.
   - "Refuse to run if the image would run as root" → `runAsNonRoot: true`.
-
----
-
-## 5. Key takeaways
-
-1. `securityContext:` is the Pod/container field that exposes the Linux
-   security knobs from chapter 06: user, capabilities, privileged mode.
-2. Two levels: `spec.securityContext` (Pod, defaults for all containers) and
-   `spec.containers[*].securityContext` (per container, overrides Pod).
-3. Pod-level inherits down. Container-level overrides for *that* container
-   only. Other containers continue to inherit the Pod default.
-4. **`capabilities:` is container-level only** — the one place the parallel
-   between Pod and container security contexts breaks.
-5. `runAsNonRoot: true` is an assertion, not a setting: it refuses to start
-   if the resolved user would be UID 0. Useful as a guard rail alongside
-   `runAsUser`.
-6. No imperative shortcut: generate Pod YAML, add the block, apply, verify
-   with `k exec -- id`.
-
-### Resolved threads
-- [x] Kubernetes `securityContext:` (Pod vs container, capabilities at
-      container only) — done here
-
-### Open threads
-- [ ] Pod Security Standards (`restricted`/`baseline`/`privileged`) and Pod
-      Security admission — CKS territory; forward reference for later
-- [ ] `fsGroup`, `seLinuxOptions`, `seccompProfile`, `appArmorProfile` —
-      additional securityContext fields, mostly CKS-relevant; CKAD rarely
-      tests beyond §3's table
-- [ ] ServiceAccounts (still open from `05-secrets.md`)
-- [ ] Volumes proper (still open from `04-configmaps.md`)

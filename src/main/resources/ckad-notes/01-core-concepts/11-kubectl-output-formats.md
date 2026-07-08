@@ -1,6 +1,6 @@
 # 10 — Formatting kubectl output
 
-> An aside, but one of the highest-leverage things you can learn for the exam. Every `kubectl get`, `describe`, and most other read commands accept an output flag — `-o` (or `--output`) — that completely changes what comes back. The default human-readable table is fine for browsing, but on the exam you'll want JSON/YAML to extract a single field, JSONPath to script a check, or `wide` to see which node a pod landed on. Knowing the right format saves seconds, and seconds add up.
+Every `kubectl get`, `describe`, and most other read commands accept an output flag — `-o` (or `--output`) — that completely changes what comes back. The default human-readable table is fine for browsing, but on the exam you'll want JSON/YAML to extract a single field, JSONPath to script a check, or `wide` to see which node a pod landed on. Knowing the right format saves seconds, and seconds add up.
 
 ---
 

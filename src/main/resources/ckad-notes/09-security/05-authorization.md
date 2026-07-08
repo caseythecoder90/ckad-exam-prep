@@ -22,9 +22,7 @@ In practice:
 - Bots/CI pipelines may only need to push new images or update a specific deployment
 - Nothing should be able to delete nodes except admins
 
-At JPMC: your limited permissions map exactly to this. You can operate on namespaces created by your team (identified by your SEAL ID — the project identifier JPMC uses to group team resources). The platform team created Roles scoped to those namespaces and bound them to your AD group via RoleBindings. Your `klogin` token carries your group membership, which is what RBAC checks.
-
-The cluster you build one day on your own infrastructure → you'll be the one creating the kubeadm admin certificate (`CN=kubernetes-admin, O=system:masters`) which has unrestricted access. Full control.
+In an enterprise setting, limited permissions map exactly to this: a platform team creates Roles scoped to team namespaces and binds them to an AD group via RoleBindings. The login token carries group membership, which is what RBAC checks. The kubeadm admin certificate (`CN=kubernetes-admin, O=system:masters`) has unrestricted access.
 
 ---
 
@@ -46,8 +44,6 @@ Set via `--authorization-mode` on the API server. Six modes exist:
 ---
 
 ## Mode 1: Node Authorization
-
-This one confused you, so here's the full explanation.
 
 **The problem it solves:** every cluster node runs a `kubelet` process. The kubelet needs to call the API server constantly to do its job — it has to know what pods are scheduled on its node, fetch secrets/configmaps those pods need, report its own status, update pod statuses, write events. That's a lot of API access from a machine-level component, not a human.
 
@@ -115,7 +111,7 @@ Now if you need to add "can get nodes" to all developers, you edit one Role obje
 
 This is the standard. RBAC is covered in full depth in the next chapter.
 
-**At JPMC:** the platform team maintains ClusterRoles (or Roles) that define what your team can do in your SEAL ID namespaces. Your AD group (`r770392@naeast.ad.jpmorganchase.com` belongs to various AD groups) is bound to those Roles via RoleBindings. When you access a cluster via `klogin`, the JWT you get embeds your AD group memberships, and RBAC checks those groups against the bindings.
+In an enterprise setting, a platform team maintains ClusterRoles (or Roles) defining what a team can do in its namespaces, and binds AD groups to those Roles via RoleBindings. The JWT obtained at login embeds the user's AD group memberships, and RBAC checks those groups against the bindings.
 
 ---
 
@@ -225,19 +221,4 @@ spec:
     ...
 ```
 
-> The instructor mentioned many clusters default to `AlwaysAllow`. This was true for very old versions (pre-1.6). Modern kubeadm clusters default to `Node,RBAC`. Check your specific cluster; don't assume.
-
----
-
-## TL;DR
-
-Authorization is the "what can you do?" gate after authentication. Six modes: `AlwaysAllow` (dev toy), `Node` (kubelets), `ABAC` (legacy file-per-user), `RBAC` (standard role-based), `Webhook` (external agent), `AlwaysDeny` (testing). Node authorization is specifically for kubelets — it limits each node's kubelet to only accessing data for its own node's pods, preventing lateral movement if a node is compromised. ABAC is painful because every permission change requires editing files and restarting the server; RBAC solves this by using role objects you can update at runtime. Webhooks delegate authorization to an external service (like OPA) for cases RBAC can't express. Multiple modes chain left to right — first Allow wins; all abstain = denied. The standard production config is `Node,RBAC` or `Node,RBAC,Webhook`.
-
----
-
-## Open Threads
-
-- [ ] RBAC deep dive — Roles, ClusterRoles, RoleBindings, ClusterRoleBindings, `kubectl auth can-i` (next chapter)
-- [ ] OPA/Gatekeeper — Rego policy language; how to write and deploy admission/authorization policies (CKS territory)
-- [ ] Node Authorizer + Node Restriction admission plugin — the pair that fully locks down kubelet access; enabling `NodeRestriction` prevents a compromised kubelet from modifying other nodes' labels
-- [ ] Building your own cluster: kubeadm sets `Node,RBAC` by default; you'll have full admin access via the `kubernetes-admin` cert that kubeadm generates in `~/.kube/config`
+> Note: very old clusters (pre-1.6) defaulted to `AlwaysAllow`. Modern kubeadm clusters default to `Node,RBAC`. Check your specific cluster; don't assume.

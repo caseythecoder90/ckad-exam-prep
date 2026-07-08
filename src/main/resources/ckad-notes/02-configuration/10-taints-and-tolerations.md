@@ -1,20 +1,8 @@
 # Taints and Tolerations
 
-> **Section:** 02-configuration
-> **Course chapter:** 10 (Taints and Tolerations)
-> **Why this is in CKAD:** Examinable. Small surface (one command on the
-> node, one block in the pod spec) but a classic source of "why isn't my
-> pod scheduling?" trick questions. Know the three effects cold and you'll
-> be fine.
-> **Companion files:** none yet — node affinity is a separate later
-> chapter and will pair with this one. The instructor mentions it but
-> doesn't teach it here.
-
----
-
 ## 1. The mental model
 
-The instructor uses an analogy worth keeping in your head:
+An analogy worth keeping in your head:
 
 - A **person** gets sprayed with bug repellent — a **taint**.
 - Most **bugs** that try to land are repelled. Some bugs happen to be
@@ -30,9 +18,9 @@ In Kubernetes:
 ![the bug analogy mapped to Kubernetes](diagrams/19-taint-analogy.png)
 
 The mechanism exists for one purpose: **restrict which pods can run on
-which nodes.** The instructor's example was a node with special resources
-(GPU, high memory, licensed software) where only specific workloads
-should run — tainting that node keeps everything else away.
+which nodes.** Example: a node with special resources (GPU, high memory,
+licensed software) where only specific workloads should run — tainting
+that node keeps everything else away.
 
 ---
 
@@ -116,10 +104,8 @@ tolerations:
 
 ## 3. The three taint effects
 
-This is the part the instructor breezed past, and it's the one that
-shows up most often in exam questions. The effect determines what
-happens to **non-tolerating pods** — pods that already match the taint
-are unaffected in all three cases.
+The effect determines what happens to **non-tolerating pods** — pods
+that already match the taint are unaffected in all three cases.
 
 ![three taint effects compared](diagrams/20-taint-effects.png)
 
@@ -134,11 +120,11 @@ are unaffected in all three cases.
 - **Common in practice.** Used for dedicated nodes, GPU/special-hardware
   nodes, and (automatically) for control-plane nodes.
 
-> **Important nuance for your question:** the pod just doesn't get
-> scheduled on *this* node. The scheduler picks a different one. If
-> no node in the cluster is acceptable to the pod, *then* the pod stays
-> in `Pending` state. The taint doesn't "fail" the pod globally — it
-> just removes one node from the candidate list.
+> **Important nuance:** the pod just doesn't get scheduled on *this*
+> node. The scheduler picks a different one. If no node in the cluster is
+> acceptable to the pod, *then* the pod stays in `Pending` state. The
+> taint doesn't "fail" the pod globally — it just removes one node from
+> the candidate list.
 
 ### `PreferNoSchedule` — soft repel (try to avoid)
 
@@ -175,9 +161,8 @@ NoExecute         block new AND kick out existing
 
 ## 4. Tolerating does NOT mean "schedule here"
 
-This is the instructor's most important throwaway line and it deserves
-loud emphasis. **A toleration is permission to land on a tainted node,
-not a directive to go there.**
+**A toleration is permission to land on a tainted node, not a directive
+to go there.**
 
 If you taint `node1` with `app=blue:NoSchedule` and add the matching
 toleration to `Pod D`, what happens is:
@@ -212,16 +197,15 @@ Either alone is incomplete:
 - Affinity alone → the pod is steered to the node, but other pods can
   still land there too (because there's no taint repelling them).
 
-Node affinity gets its own chapter later in the course. Worth flagging
-the gap now so you don't think tolerations are doing more than they are.
+Node affinity gets its own chapter later in the course.
 
 ---
 
 ## 5. The master/control-plane node taint
 
-The instructor's closing point: by default, **no application pods run
-on the control plane node** — only system components like kube-apiserver,
-etcd, scheduler, controller-manager.
+By default, **no application pods run on the control plane node** — only
+system components like kube-apiserver, etcd, scheduler,
+controller-manager.
 
 The mechanism is exactly this chapter: when you bootstrap a cluster
 (`kubeadm init`), the control plane node gets tainted automatically:
@@ -368,39 +352,4 @@ kubectl run myapp --image=nginx $do > pod.yaml
 
 No imperative shortcut for adding a toleration to a Pod manifest — it's
 always a YAML edit. On the exam, generate with `$do` then add the four
-lines of toleration under `spec:`. Practice that flow in killer.sh.
-
----
-
-## 10. TL;DR / takeaways
-
-1. **Taint** on the node (push pods away). **Toleration** on the pod
-   (permission to land anyway). Both halves must match for the pod to
-   be allowed on the node.
-2. Three effects: `NoSchedule` (block new), `PreferNoSchedule` (soft
-   block new), `NoExecute` (block new AND evict existing
-   non-tolerating pods).
-3. **Toleration = permission, not destination.** A tolerating pod is
-   *eligible* for the tainted node, not *steered* to it. To steer, you
-   need node affinity (later chapter).
-4. Control-plane nodes carry a default `NoSchedule` taint
-   (`node-role.kubernetes.io/control-plane`) that's how Kubernetes
-   keeps app pods off them.
-5. Multiple taints on a node → pod needs tolerations for ALL of them.
-6. Remove a taint with the trailing `-` syntax:
-   `kubectl taint nodes node1 app=blue:NoSchedule-`
-7. Quote string values in toleration YAML to avoid YAML-parsing edge
-   cases.
-
-### Resolved threads
-- (none from prior chapters)
-
-### Open threads
-- [ ] **Node affinity / `nodeSelector`** — the pull-toward complement
-      to taints. Covered in a later chapter; will close the
-      "dedicated node" pattern referenced in §4.
-- [ ] **Pod-to-pod affinity / anti-affinity** — same mechanism applied
-      to pod-level co-location (run near, run away from). Later.
-- [ ] **Eviction** — `NoExecute` is one source of pod eviction.
-      Resource pressure (memory, disk) is another, covered later under
-      QoS classes / `08-resource-requirements.md` companion topics.
+lines of toleration under `spec:`.

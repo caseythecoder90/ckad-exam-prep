@@ -1,12 +1,12 @@
 # 10 — Exploring the API: `api-resources` and `explain`
 
-> Two commands that pay back the time you spend learning them many times over: `kubectl api-resources` to discover what you can create, and `kubectl explain` to learn what every field means. Both are exam-allowed and indispensable for decoding real-world manifests at work.
+Two commands that pay back the time you spend learning them many times over: `kubectl api-resources` to discover what you can create, and `kubectl explain` to learn what every field means. Both are exam-allowed and indispensable for decoding real-world manifests at work.
 
 ---
 
 ## 1. Why these commands matter
 
-Nobody memorizes every Kubernetes field. There are thousands. The Kubernetes docs at kubernetes.io list them, but on the exam you only have one Firefox tab and limited time, and at JPMC you'll regularly stare at a 300-line manifest with fields you've never seen.
+Nobody memorizes every Kubernetes field. There are thousands. The Kubernetes docs at kubernetes.io list them, but on the exam you only have one Firefox tab and limited time, and at work you'll regularly stare at a 300-line manifest with fields you've never seen.
 
 The two commands in this chapter solve both problems:
 
@@ -15,7 +15,7 @@ The two commands in this chapter solve both problems:
 
 Both run against the API server you're connected to, so they always show you the truth for *that exact cluster's* Kubernetes version. The docs on kubernetes.io can be slightly off if you're on an older or vendored Kubernetes; `explain` cannot.
 
-> **Exam relevance:** these are arguably the two most useful commands during the CKAD exam (after kubectl itself). Practice using them locally enough that they're reflexive — when you blank on a field, your hands type `k explain` before your brain catches up.
+These are arguably the two most useful commands during the CKAD exam (after kubectl itself). Practice using them locally enough that they're reflexive — when you blank on a field, your hands type `k explain` before your brain catches up.
 
 ---
 
@@ -256,9 +256,9 @@ k explain pods.spec.containers.resources
 
 The `--recursive` flag is the workhorse here. On the exam, it saves you searching kubernetes.io for the exact field names.
 
-### Use case B: decoding manifests at work (your JPMC use case)
+### Use case B: decoding manifests at work
 
-When you're looking at the JPMC customer-account-alias-service manifest and you see a field you don't recognize:
+When you're looking at a production manifest and see a field you don't recognize:
 
 ```bash
 # What does `livenessProbe.httpGet.scheme` actually do?
@@ -324,15 +324,15 @@ Quick way to confirm `rs` is the short form for ReplicaSet, etc.
 
 ---
 
-## 6. Connecting back to chapter 4 — your JPMC pod walkthrough
+## 6. Connecting back to chapter 4 — the production pod walkthrough
 
-In chapter 4 I walked through the JPMC pod's fields based on what I knew. With `explain` you can verify and deepen anything in that manifest yourself. Some examples worth running:
+With `explain` you can verify and deepen anything in the chapter-4 pod manifest yourself. Some examples worth running:
 
 ```bash
 # What's terminationMessagePolicy and what are the valid values?
 k explain pods.spec.containers.terminationMessagePolicy
 
-# What are all the security context fields you saw at JPMC?
+# What are all the security context fields?
 k explain pods.spec.containers.securityContext --recursive
 
 # What does the limit-ranger annotation do (well, that's an annotation, but
@@ -369,24 +369,3 @@ kubectl explain services.spec                  # what goes in a Service spec
 kubectl explain configmaps                     # ConfigMap structure
 kubectl explain secrets                        # Secret structure
 ```
-
----
-
-## Quick recall checklist
-
-- [ ] Which command lists every resource type the cluster supports?
-- [ ] What two values does `api-resources` give you that are required at the top of every manifest?
-- [ ] What's the short name for `replicasets`? For `services`? For `deployments`?
-- [ ] What's the difference between `kubectl explain pods` and `kubectl explain pods --recursive`?
-- [ ] How would you find out what fields exist under `spec.containers.livenessProbe`?
-- [ ] What does `-required-` mean in `explain` output?
-- [ ] What does `<[]Container>` mean as a field type?
-- [ ] Why would you use `kubectl explain` instead of just looking at kubernetes.io?
-- [ ] How does `--recursive` change the output? When is it more useful than without?
-- [ ] How would you check whether a resource is namespaced or cluster-scoped?
-
----
-
-## Notes for next chapters
-
-These commands are reference tools, not topics on their own — you'll use them constantly in the chapters that come next. Up next is likely **imperative vs declarative commands** (formalizing the patterns you've already been using) or **ConfigMaps and Secrets** (how to externalize configuration, which the JPMC pod uses heavily via `envFrom` and `secretKeyRef`). When you hit a field you don't recognize in either chapter, run `k explain <resource>.<field>` and read the source.

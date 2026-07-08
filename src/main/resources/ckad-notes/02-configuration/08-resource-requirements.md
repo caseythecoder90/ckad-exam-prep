@@ -1,16 +1,7 @@
 # Resource Requirements
 
-> **Section:** 02-configuration
-> **Course chapter:** 08 (Resource Requirements)
-> **Why this is in CKAD:** Directly examinable, frequently. Field names are
-> small; the conceptual traps (CPU vs memory asymmetry, the four
-> requests/limits combos, LimitRange vs ResourceQuota, units) are where the
-> exam scores you.
-> **Companion file:** `bytes-and-cpu-units-reference.md` — separate refresher
-> on bits/bytes/kilo-vs-kibi and CPU millicores. Read alongside §3 of this
-> chapter.
-
----
+Companion file: `bytes-and-cpu-units-reference.md` — refresher on
+bits/bytes/kilo-vs-kibi and CPU millicores; read alongside §3.
 
 ## 1. Why this matters: the scheduler's fit problem
 
@@ -38,8 +29,7 @@ scenarios.
 
 ### How to diagnose a stuck Pod
 
-Same pattern you've used in earlier chapters — drop into `describe` and read
-the Events:
+Drop into `describe` and read the Events:
 
 ```bash
 kubectl describe pod <name>
@@ -107,9 +97,8 @@ of memory (the kubelet/runtime will enforce this).
 
 ## 3. The four scenarios — CPU behavior
 
-This is the chart you asked about. Same node, same Pod, four different
-configurations of `requests`/`limits` for CPU. The CPU column on the node
-shows how much CPU the Pod is allowed to use.
+Same node, same Pod, four different configurations of `requests`/`limits` for
+CPU. The CPU column on the node shows how much CPU the Pod is allowed to use.
 
 ![CPU behavior - four scenarios](./diagrams/14-cpu-behavior.png)
 
@@ -163,7 +152,7 @@ and someone else needs their share, the kernel can throttle this Pod back
 down to its request instantly. No data is lost; the Pod just runs slower
 for a moment.
 
-> Important caveat the lecture skips: "no limits" CPU is great in
+> Important caveat: "no limits" CPU is great in
 > *single-tenant or well-known workloads*. In a multi-tenant cluster
 > (different teams sharing a cluster), running with no CPU limit is often
 > forbidden by policy because it makes capacity planning unpredictable. The
@@ -175,8 +164,7 @@ for a moment.
 ## 4. Memory behavior — the critical asymmetry
 
 CPU's story does **not** apply to memory. This is the most important
-operational point in the chapter, and it's the one you saw bite a team at
-work.
+operational point in the chapter.
 
 ![Memory behavior - the asymmetry](./diagrams/15-memory-behavior.png)
 
@@ -192,9 +180,9 @@ The asymmetry has two consequences:
 limit is throttled — annoying. A Pod over its memory limit is dead. Set
 memory limits.
 
-**(b) "Requests but no limits" is *dangerous* for memory.** This is what
-happened at your job. Without a memory limit, a runaway Pod can grow until
-it exhausts the node. When the node hits OOM, the kernel's OOM killer picks
+**(b) "Requests but no limits" is *dangerous* for memory.** Without a memory
+limit, a runaway Pod can grow until it exhausts the node. When the node hits
+OOM, the kernel's OOM killer picks
 victims based on heuristics — and it doesn't always pick the offender. It
 can evict other Pods, including system Pods, taking the node into an unsafe
 state and cascading failure across the cluster.
@@ -204,9 +192,9 @@ The right rule for memory is **always set a limit**, and set it high enough
 that legitimate spikes don't trigger OOM but low enough that runaway growth
 is contained.
 
-### What you saw at work
+### The runaway-memory pattern
 
-The pattern is well-known. Symptoms:
+Symptoms:
 
 - One Pod's memory usage climbing without bound.
 - Eventually other Pods on the same node start dying with no obvious cause
@@ -287,7 +275,7 @@ Memory LimitRange is the same shape with `memory:` values (`1Gi`, `500Mi`,
 etc.). You can put CPU and memory in the same LimitRange under one
 `limits:` entry; the lecture shows them separated for clarity.
 
-### The critical gotcha — flagged on the instructor's slide
+### The critical gotcha
 
 > **LimitRange affects only Pods created AFTER it exists.** Existing Pods
 > in the namespace are not retroactively defaulted or rejected.
@@ -427,38 +415,3 @@ namespace's footprint.
     likely the same.
   - "Limit namespace Y to 10 CPUs total" → `kind: ResourceQuota`,
     `hard.limits.cpu: "10"`.
-
----
-
-## 9. Key takeaways
-
-1. The scheduler places Pods using their `requests`. No node big enough →
-   `Pending`. `kubectl describe pod` Events show "FailedScheduling /
-   Insufficient cpu/memory".
-2. `requests:` reserves; `limits:` caps. Both live under
-   `spec.containers[*].resources:`.
-3. **CPU is compressible** — over-limit is throttled, no data lost. The
-   lecture's "requests, no limits" ideal is for CPU.
-4. **Memory is NOT compressible** — over-limit is OOMKilled, container
-   dies. "Requests, no limits" is *dangerous* for memory: a runaway Pod
-   can exhaust the node and evict other Pods (the cascade you saw at
-   work). **Always set memory limits.**
-5. By default, no requests and no limits. Worst case for everyone.
-6. **LimitRange** sets per-container defaults and bounds in a namespace.
-   Forward-only: doesn't retroactively affect existing Pods.
-7. **ResourceQuota** caps the namespace's aggregate footprint
-   (sum of requests/limits across all containers).
-8. Units cheat sheet lives in `bytes-and-cpu-units-reference.md`. Use
-   `Gi/Mi/Ki` (base-2) for memory by default; use `m` (millicores) for
-   sub-CPU values.
-
-### Resolved threads
-- (none new — this chapter is mostly forward-looking)
-
-### Open threads
-- [ ] Pod priority and preemption — how the scheduler handles contention
-      among Pending Pods (CKA-adjacent, brief in CKAD)
-- [ ] QoS classes (Guaranteed / Burstable / BestEffort) — derived from the
-      4 combos above; relevant for eviction order under node pressure
-- [ ] ServiceAccounts (still open from `05-secrets.md`)
-- [ ] Volumes proper (still open from `04-configmaps.md`)

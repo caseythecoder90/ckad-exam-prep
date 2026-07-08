@@ -105,7 +105,7 @@ CSI (Container Storage Interface) provisioners run as separate pods in the clust
 
 > **For CKAD:** you won't install CSI drivers during the exam. You will write PVCs that reference a named StorageClass. Know the wiring and what the fields do. CSI internals are CKS territory.
 
-> **At JPMC:** the platform team almost certainly deploys CSI drivers (provisioner names will look like vendor URIs, not `kubernetes.io/*`). Your CockroachDB StatefulSet uses per-pod PVCs backed by whatever SC the platform defined. You write the `storageClassName`; the platform team owns what's behind it.
+> **In production:** a platform team typically deploys CSI drivers (provisioner names look like vendor URIs, not `kubernetes.io/*`). A StatefulSet uses per-pod PVCs backed by whatever SC the platform defined. You write the `storageClassName`; the platform team owns what's behind it.
 
 ---
 
@@ -246,7 +246,7 @@ GCP persistent disks and AWS EBS volumes are zone-specific — a disk in `us-eas
 
 ---
 
-## Your kind Cluster
+## kind Cluster Example
 
 kind ships with a default StorageClass backed by `rancher.io/local-path` (local-path-provisioner):
 
@@ -269,7 +269,7 @@ kubectl get pvc   # Status: Bound
 kubectl get pv    # Auto-created PV appears here
 ```
 
-This is the cleanest hands-on loop you have right now for dynamic provisioning without cloud credentials.
+This is the cleanest hands-on loop for dynamic provisioning without cloud credentials.
 
 ---
 
@@ -337,24 +337,3 @@ kubectl apply -f pvc.yaml --dry-run=client
 - **Exam clusters have a default SC.** A PVC without `storageClassName` will use it. Always check `kubectl get sc` to understand what's in the cluster.
 - **`""` vs absent field.** `storageClassName: ""` is an explicit opt-out. Omitting the field entirely is not. They behave differently.
 - **Reclaim policy is the SC's, not the PV's option.** The PV inherits it at creation time; changing the SC after the fact doesn't affect existing PVs.
-
----
-
-## TL;DR
-
-Static provisioning = admin creates cloud disk + admin writes PV manifest = manual, unscalable. StorageClasses break this by defining a *named provisioner config*. When a PVC sets `storageClassName`, the SC's provisioner auto-creates the PV and underlying storage — sized exactly to the PVC request. The PV still exists; you just didn't write it. Multiple SCs enable tiered storage (silver/gold/platinum) using the same provisioner with different parameters. `volumeBindingMode: WaitForFirstConsumer` is essential for zone-aware storage to avoid zone mismatches.
-
----
-
-## Resolved Threads
-
-- **"Carve a right-sized PV per claim"** (ch04 open thread): solved. The provisioner creates a PV exactly the size of the PVC request. No over-provisioning, no waste.
-- **CSI thread** (ch02): in-tree provisioners (`kubernetes.io/*`) are the legacy path. CSI drivers are the current standard. Same StorageClass concept, different provisioner value. Both work identically from the PVC author's perspective.
-- **StatefulSet + `volumeClaimTemplates`**: each replica gets its own PVC auto-created from a template using a named SC. This is exactly how CockroachDB works at JPMC — per-pod volumes via SC-backed PVCs. This is covered in the StatefulSet chapter.
-
-## Open Threads
-
-- [ ] `allowVolumeExpansion: true` on a SC — what it enables, what its limits are, whether existing PVs automatically pick it up
-- [ ] StatefulSet `volumeClaimTemplates` — the per-replica PVC pattern; directly relevant to CockroachDB at JPMC
-- [ ] Reclaim policy lifecycle — `Retain` vs `Delete` in practice; how to manually rebind a retained PV; `Recycle` (deprecated)
-- [ ] CSI driver architecture — controller plugin vs node plugin split; how kubelet and the CSI driver communicate; relevant for CKS supply-chain concerns

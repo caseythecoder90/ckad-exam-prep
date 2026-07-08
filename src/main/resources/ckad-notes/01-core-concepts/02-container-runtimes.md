@@ -1,6 +1,6 @@
 # 02 — Containers, Docker, containerd, CRI, OCI
 
-> This chapter is mostly *context*. The instructor walks through it with images and minimal narration, but the topic matters because every CKAD environment today uses containerd (not Docker), and the debug commands you'll use on the exam (`crictl`, not `docker`) come from this evolution.
+Every CKAD environment today uses containerd (not Docker), and the debug commands you'll use on the exam (`crictl`, not `docker`) come from this evolution.
 
 ---
 
@@ -130,32 +130,3 @@ When debugging on a Kubernetes node, your muscle memory will say `docker ps`, bu
 A few `docker` flags don't have crictl equivalents (`--detach-keys`, `--sig-proxy`, `--privileged` on exec, the `--details` flag on logs). For everyday debugging during the exam, the basic forms above are what you'll reach for.
 
 > **In practice:** for almost everything CKAD-related you should use `kubectl logs` and `kubectl exec`, not `crictl`. You only fall back to `crictl` when something is wrong *below* the kubelet — for example, the kubelet can't start a pod because the runtime is unhealthy. That's a "find the node, ssh in, run crictl" situation.
-
----
-
-## 6. Mental model for the exam
-
-If you only remember three things from this chapter:
-
-1. **The runtime today is containerd.** Docker is no longer in the cluster as of v1.24.
-2. **The protocol between kubelet and runtime is CRI.** Anything that's "CRI-compliant" can be a runtime.
-3. **Your image format is OCI.** Build with Docker locally, run on containerd in production. Same image.
-
----
-
-## Quick recall checklist
-
-- [ ] What is a container runtime, and where does it live?
-- [ ] What does OCI standardize? Name the two specs.
-- [ ] What is `runc`, and what's its role?
-- [ ] Why was dockershim needed, and when was it removed?
-- [ ] In a v1.24+ cluster, what runs as the runtime by default?
-- [ ] What's the difference between `ctr`, `nerdctl`, and `crictl`?
-- [ ] Which CLI tool should you reach for when debugging containers on a Kubernetes node?
-- [ ] Can you still build images with `docker build` and deploy to a containerd cluster? Why?
-
----
-
-## Notes for next chapters
-
-Up next: pods (single vs multi-container, init containers, sidecars).

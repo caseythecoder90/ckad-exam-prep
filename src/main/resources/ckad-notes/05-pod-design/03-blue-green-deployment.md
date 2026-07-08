@@ -1,15 +1,6 @@
 # Deployment Strategies: Blue/Green
 
-> **Section:** 05-pod-design
-> **Course chapter:** 3 (Deployment Strategies - Blue/Green)
-> **Why this is in CKAD:** You should understand the strategy beyond the two built-in ones and be able to implement blue/green with plain primitives (two Deployments + a Service whose selector you flip). The label-switch mechanic is the testable part.
-> **Companion files:** `02-deployment-updates-rollbacks.md` (Recreate/RollingUpdate are the built-in strategies this builds on); `01-labels-selectors-annotations.md` (blue/green is entirely a selector/label trick)
-
----
-
 ## 1. Recap: the two built-in strategies
-
-The instructor reviews where we were before introducing new strategies:
 
 - **Recreate** - tear down all old pods, then create all new ones. There is a window with **zero pods running = downtime**. Not the default. Set explicitly with `strategy.type: Recreate`.
 - **RollingUpdate** - replace pods a few at a time so the app stays up; **the default**. Covered in `02-deployment-updates-rollbacks.md`.
@@ -121,18 +112,18 @@ kubectl patch service my-service -p '{"spec":{"selector":{"version":"v2"}}}'
 
 The cutover is atomic from the Service's point of view - it recomputes its endpoints to the v2 pods. **Rollback is just flipping the selector back to `v1`** (blue is still running). Once you are confident in green, you can delete the blue Deployment to reclaim the capacity.
 
-## 4. Service mesh and the "estial" word (your question)
+## 4. Service mesh
 
-The word you couldn't catch is **Istio** (pronounced "iss-tee-oh"). It is a **service mesh** - an infrastructure layer that runs alongside your pods (typically as an **Envoy sidecar proxy** injected into each pod - this is exactly the sidecar pattern from `../03-multi-container-pods/02-design-patterns.md`) and takes over service-to-service traffic management.
+**Istio** is a **service mesh** - an infrastructure layer that runs alongside your pods (typically as an **Envoy sidecar proxy** injected into each pod - this is exactly the sidecar pattern from `../03-multi-container-pods/02-design-patterns.md`) and takes over service-to-service traffic management.
 
 Why a mesh is the "better" way to do blue/green and canary:
 
 - A plain Kubernetes **Service selector is all-or-nothing** - traffic goes 100% to whatever the selector matches. You cannot say "10% to green."
 - A mesh can split traffic by **weight and rules** - "90% blue / 10% green," or "route requests with header `x-beta: true` to green." That is what makes true canary (gradual percentage shift) and sophisticated blue/green possible.
 
-Istio is the best-known mesh; **Linkerd** is the other common one. As the instructor noted, meshes are a separate course/topic and are **not required for CKAD** - the exam-relevant blue/green is the label-switch method in section 3. Just know the term and why it exists: the mesh gives you traffic *percentages and rules* that the native Service primitive cannot.
+Istio is the best-known mesh; **Linkerd** is the other common one. Meshes are **not required for CKAD** - the exam-relevant blue/green is the label-switch method in section 3. Just know the term and why it exists: the mesh gives you traffic *percentages and rules* that the native Service primitive cannot.
 
-## 5. Trade-offs (worth understanding for work)
+## 5. Trade-offs
 
 | | Blue/Green | RollingUpdate (default) |
 |---|---|---|
@@ -143,7 +134,7 @@ Istio is the best-known mesh; **Linkerd** is the other common one. As the instru
 | Resource cost | **2x pods** during transition | ~`maxSurge` extra pods |
 | Mixed-version exposure to users | none (clean switch) | yes (briefly) |
 
-Blue/green's appeal is the clean validation window and instant switch/rollback; its cost is running double capacity for a while. If your app cannot tolerate two versions serving users simultaneously (the RollingUpdate downside you hit at work), blue/green is the pattern that avoids it without Recreate's downtime - blue serves continuously right up to the atomic switch.
+Blue/green's appeal is the clean validation window and instant switch/rollback; its cost is running double capacity for a while. If an app cannot tolerate two versions serving users simultaneously (the RollingUpdate downside), blue/green is the pattern that avoids it without Recreate's downtime - blue serves continuously right up to the atomic switch.
 
 ## 6. Exam-pattern gotchas
 
@@ -177,18 +168,3 @@ kubectl patch service my-service -p '{"spec":{"selector":{"version":"v1"}}}'
 # once confident, retire blue
 kubectl delete -f myapp-blue.yml
 ```
-
-## 8. TL;DR / takeaways
-
-- **Recreate and RollingUpdate are the only `strategy.type` values.** Blue/green and canary are **patterns**, not Deployment options.
-- **Blue/green** = two full environments; blue serves all traffic while green is deployed-but-dark; validate green, then switch **all** traffic at once; instant rollback by switching back.
-- Implement with primitives: **two Deployments** labelled `version: v1` / `version: v2` + a **Service whose selector you flip** from v1 to v2. The cutover is a Service-selector change, nothing else.
-- The mesh you heard is **Istio** (a service mesh, usually an Envoy sidecar). Meshes enable weighted/rule-based traffic splitting that a plain Service selector (all-or-nothing) can't - that's why they're preferred for blue/green and especially canary. Not on CKAD; know the term.
-- Trade-off vs RollingUpdate: clean validation + instant switch + no mixed-version user exposure, at the cost of **2x pods** during the transition.
-
----
-
-### Open threads
-- [ ] **Canary** (next lecture): the gradual-percentage cousin - with primitives it's approximated by replica ratios across two Deployments behind one Service; with a mesh it's true weighted routing.
-- [ ] Revisit **Istio/Envoy** only if a later course or your work uses it; tie back to the sidecar pattern in `../03-multi-container-pods/02-design-patterns.md`.
-- [ ] At work: consider whether blue/green fits any service where the RollingUpdate mixed-version window is a problem (e.g. a breaking API/schema change).

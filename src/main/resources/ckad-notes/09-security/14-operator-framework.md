@@ -46,9 +46,8 @@ up, upgrading, and recovering an application.
 
 ## 2. The etcd operator — a concrete example
 
-The instructor highlights the etcd operator as one of the most well-known
-operators. It manages an etcd cluster within Kubernetes and defines three
-CRDs, each with its own controller:
+The etcd operator is one of the most well-known operators. It manages an etcd
+cluster within Kubernetes and defines three CRDs, each with its own controller:
 
 | CRD | Controller | What it does |
 |---|---|---|
@@ -122,53 +121,3 @@ custom resource type.
 **Gotcha 3 – Installing an operator = installing CRDs + controller**
 If asked to "install the etcd operator," you'd apply the operator manifest
 which creates CRDs, RBAC, and the controller Deployment.
-
----
-
-## 6. JPMC context
-
-Every operator in your stack was installed as a unit — CRD + controller +
-RBAC together:
-
-- The CockroachDB operator was installed by the platform team, which
-  created the `CrdbCluster` CRD and the operator Deployment in one step.
-  You interact with the CRD; the operator does the rest.
-
-- Calico, Contour — same pattern. Installed as operators. The CRDs
-  (NetworkPolicy, HTTPProxy) and controllers came as a package.
-
-- If you ever need an operator that isn't already installed in the cluster,
-  you'd request it through the platform org — they control what operators
-  run in the cluster via OLM or their own deployment pipeline.
-
----
-
-## 7. TL;DR
-
-- **Operator = CRD + Controller** packaged together. One install gives you
-  the resource types and the automation that acts on them.
-- Operators automate the work a human operator would do: deploy, scale,
-  backup, upgrade, recover.
-- An operator can define **multiple CRDs** (e.g., etcd operator has
-  EtcdCluster, EtcdBackup, EtcdRestore).
-- **OperatorHub.io** is the community catalog — check it before building
-  from scratch.
-- **OLM** (Operator Lifecycle Manager) manages operator install/upgrade in
-  a cluster. Optional but standard in production.
-- CKAD: know the vocabulary. CKA: may install operators. CKS: operator
-  RBAC security.
-
----
-
-## Open threads
-
-- [ ] **Helm** (if covered in course): another packaging mechanism for
-  Kubernetes applications. Some operators are installed via Helm charts.
-  Different from the operator pattern but complementary.
-- [ ] **ServiceAccounts** (still open from ch07): operator controllers need
-  ServiceAccounts with specific RBAC — ties directly back to the open thread.
-
-## Resolved threads
-
-- [x] **Operator pattern**: previewed in ch12, controller covered in ch13,
-  now fully defined as the CRD + Controller package.

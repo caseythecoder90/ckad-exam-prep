@@ -1,23 +1,20 @@
 # Volumes in Kubernetes
 
-> **Section:** 07-storage
-> **Course chapter:** 3 (Volumes)
-> **Why this is in CKAD:** This is the first **examinable** storage topic. You'll write `volumes` + `volumeMounts` into pod specs, pick a volume type, and reason about why `hostPath` breaks on a multi-node cluster. `emptyDir` and the `volumes`/`volumeMounts` wiring show up directly on tasks.
-> **Companion files:** `01-docker-storage.md` and `02-volume-driver-plugins.md` (the Docker "why" — ephemeral container layer, copy-on-write, volume drivers → CSI). This chapter is the Kubernetes realization of that. Multi-container sharing ties back to `03-multi-container-pods/`.
+The first **examinable** storage topic. You'll write `volumes` + `volumeMounts` into pod specs, pick a volume type, and reason about why `hostPath` breaks on a multi-node cluster. `emptyDir` and the `volumes`/`volumeMounts` wiring show up directly on tasks. Builds on the Docker "why" from `01-docker-storage.md` and `02-volume-driver-plugins.md`.
 
 ---
 
-## 1. Why volumes (instructor framing)
+## 1. Why volumes
 
-Same premise as Docker, restated for Kubernetes: **pods are transient.** A pod's containers behave like normal Docker containers — any data created during the run lives in the ephemeral container layer and is **destroyed when the pod dies** (this is exactly the read-write-layer point from `01-docker-storage.md`). A **volume** is storage attached to the pod that **outlives the container**: data the container writes into the volume is retained, and survives restarts, until explicitly deleted.
+Same premise as Docker, restated for Kubernetes: **pods are transient.** A pod's containers behave like normal Docker containers — any data created during the run lives in the ephemeral container layer and is **destroyed when the pod dies** (the read-write-layer point from `01-docker-storage.md`). A **volume** is storage attached to the pod that **outlives the container**: data the container writes into the volume is retained, and survives restarts, until explicitly deleted.
 
-His example is a `random-number-generator` pod: an alpine container runs `shuf` to append a random number to `/opt/number.out` on each run. Without a volume, that file dies with the pod. Mount a volume at `/opt`, and the number persists.
+Example: a `random-number-generator` pod runs `shuf` to append a random number to `/opt/number.out` on each run. Without a volume, that file dies with the pod. Mount a volume at `/opt`, and the number persists.
 
 ---
 
-## 2. The two halves: `volumes` and `volumeMounts` (the part you hadn't fully understood)
+## 2. The two halves: `volumes` and `volumeMounts`
 
-This is the mechanic you flagged — "once the volume is created, to access it from a container we mount it to a directory inside the container." There are **two separate pieces**, in two different places in the pod spec:
+There are **two separate pieces**, in two different places in the pod spec:
 
 ![A volume has two halves: define it (pod), mount it (container)](./diagrams/06-volumes-and-mounts.png)
 
@@ -53,9 +50,9 @@ So: the container writes to `/opt`; because `/opt` is the mount point of `data-v
 
 ## 3. `hostPath` — store data in a directory on the node
 
-The first volume type he shows is **`hostPath`**: the volume *is* a directory on the **node's** filesystem. There's a logical volume in the pod, but the bytes live in (here) `/data` on whichever node the pod runs on. This is the direct Kubernetes cousin of a Docker **bind mount** (callback to `01-docker-storage.md`).
+**`hostPath`**: the volume *is* a directory on the **node's** filesystem. There's a logical volume in the pod, but the bytes live in (here) `/data` on whichever node the pod runs on. This is the direct Kubernetes cousin of a Docker **bind mount**.
 
-The `type` field controls behaviour (beyond the lecture, worth knowing):
+The `type` field controls behaviour:
 
 | `type` | Meaning |
 |---|---|
@@ -69,7 +66,7 @@ The `type` field controls behaviour (beyond the lecture, worth knowing):
 
 ---
 
-## 4. The multi-node problem (the confusion you flagged)
+## 4. The multi-node problem
 
 `hostPath` works fine on a **single-node** cluster. On a **multi-node** cluster it's a trap, and this is the key insight:
 
@@ -87,28 +84,28 @@ Every node has its **own** `/data` directory. They share the *path* `/data`, but
 
 ## 5. Volume types: the menu
 
-Instead of `hostPath`, swap in a storage backend. The slide shows a long list; Kubernetes supports many:
+Instead of `hostPath`, swap in a storage backend. Kubernetes supports many:
 
 - **`emptyDir`** — ephemeral scratch space (see below). Pod-scoped.
 - **`hostPath`** — a node directory (the trap above).
 - **Networked / shared:** `nfs`, `cephfs`, `glusterfs`, ScaleIO, Flocker — genuinely shared across nodes.
 - **Cloud block storage:** `awsElasticBlockStore`, `azureDisk`/`azureFile`, `gcePersistentDisk`.
 
-The inline cloud example from the slide:
+Inline cloud example:
 
 ```yaml
   volumes:
   - name: data-volume
-    awsElasticBlockStore:        # in-tree plugin — see correction
+    awsElasticBlockStore:        # in-tree plugin — see note
       volumeID: <volume-id>
       fsType: ext4
 ```
 
-> **Correction / update (the slides are dated here):** these **in-tree cloud volume plugins** (`awsElasticBlockStore`, `gcePersistentDisk`, `azureDisk`, …) are **deprecated** and being removed in favor of **CSI**. On a current cluster you don't write `awsElasticBlockStore:` directly in the pod — you create a **PersistentVolumeClaim** bound to a **PersistentVolume** that a **StorageClass** provisions via the cloud's **CSI driver** (this is the CSI thread from `02-volume-driver-plugins.md` becoming concrete). PV / PVC / StorageClass are the next chapters and the real CKAD storage objects.
+> **Note (dated):** these **in-tree cloud volume plugins** (`awsElasticBlockStore`, `gcePersistentDisk`, `azureDisk`, …) are **deprecated** and being removed in favor of **CSI**. On a current cluster you don't write `awsElasticBlockStore:` directly in the pod — you create a **PersistentVolumeClaim** bound to a **PersistentVolume** that a **StorageClass** provisions via the cloud's **CSI driver**. PV / PVC / StorageClass are the next chapters and the real CKAD storage objects.
 
-### `emptyDir` — the one the lecture skips but the exam loves (beyond-lecture)
+### `emptyDir` — exam-critical
 
-`emptyDir` is the most common CKAD volume and worth adding:
+`emptyDir` is the most common CKAD volume:
 
 ```yaml
   volumes:
@@ -117,7 +114,7 @@ The inline cloud example from the slide:
 ```
 
 - Created **empty** when the pod is assigned to a node; lives **as long as the pod** runs there; **deleted when the pod is removed** (ephemeral, like the container layer — but **shared across containers in the same pod**).
-- Primary use: **scratch space**, or **sharing files between containers in one pod** (the sidecar/init pattern from `03-multi-container-pods/` — one container writes, another reads, via a shared `emptyDir`).
+- Primary use: **scratch space**, or **sharing files between containers in one pod** (the sidecar/init pattern — one container writes, another reads, via a shared `emptyDir`).
 - `emptyDir: { medium: Memory }` backs it with tmpfs (RAM) instead of disk.
 
 ---
@@ -159,28 +156,3 @@ kubectl describe pod <name>                      # Mounts: section shows what's 
 - **`emptyDir`** is ephemeral (dies with the pod) but **shared across containers in the pod** — the go-to for sidecar file sharing.
 - **In-tree cloud volume types are deprecated** → use a **PVC** backed by a CSI **StorageClass** instead of inline `awsElasticBlockStore:` etc.
 - `type: Directory` requires the dir to exist; use `DirectoryOrCreate` to have it created.
-
----
-
-## TL;DR / takeaways
-
-- Pods are transient; a **volume** keeps data beyond the container's life.
-- A volume is **two pieces**: `spec.volumes` (pod-level, defines the source) + `volumeMounts` (per-container, attaches it at `mountPath`), linked by **name**. WHAT → WHERE.
-- **`hostPath`** stores data in a directory **on the node** (the k8s bind mount). Single-node only — on multi-node, each node's path is a *different* directory, so data neither follows the pod nor replicates.
-- Fix multi-node with **shared/external** volume types (NFS, Ceph, cloud disks) — but the modern, examinable way is **PVC + StorageClass + CSI**, not inline in-tree cloud plugins.
-- **`emptyDir`** (beyond the lecture, exam-critical): ephemeral, pod-scoped, **shared between containers in a pod** — the sidecar sharing volume.
-
----
-
-## Resolved threads
-
-- [x] **"How does mounting a volume into a container actually work?"** — two halves: pod-level `volumes` defines it, per-container `volumeMounts` attaches it at a path, matched by `name`. Diagram 06.
-- [x] **"Why is `hostPath` not recommended for multi-node?"** — each node's directory is separate and unsynced; a rescheduled pod sees different/empty data. Diagram 07.
-- [x] **Docker → k8s storage map** (carried from `01`/`02`): bind mount → hostPath; docker volume → emptyDir (ephemeral) / PV (persistent).
-
-### Open threads
-
-- [ ] Reproduce the multi-node trap on your **3-node kind cluster**: a `hostPath` pod, write a file, delete + reschedule onto another node, watch the data not be there. Then redo it with a PVC once you've covered them.
-- [ ] Practice an **`emptyDir`** shared between two containers in one pod (writer + reader) — connects directly to your multi-container-pods notes.
-- [ ] **Next lecture:** **PersistentVolumes & PersistentVolumeClaims** — the real CKAD storage objects. Watch the **PV↔PVC binding** (capacity/accessModes/storageClassName matching), `persistentVolumeReclaimPolicy` (Retain/Delete), and how a pod consumes a PVC. Next file = `04-...`; next diagram = `08-...`.
-- [ ] Then **StorageClasses / dynamic provisioning** — where the CSI thread from `02` fully lands (a PVC triggers a CSI driver to create a PV on demand).

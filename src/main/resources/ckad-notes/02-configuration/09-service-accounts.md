@@ -1,18 +1,5 @@
 # Service Accounts
 
-> **Section:** 02-configuration
-> **Course chapter:** 09 (Service Accounts)
-> **Why this is in CKAD:** Directly examinable. Small surface — create a SA,
-> attach it to a Pod, understand which token shows up where and why. The
-> v1.22 / v1.24 changes matter because the exam runs on a recent cluster
-> and the legacy "Secret token auto-created" behavior is gone.
-> **Companion files:** `05-secrets.md` (Secret type
-> `kubernetes.io/service-account-token`), `07-security-contexts.md` (the
-> other identity-shaped chapter; SAs answer "who is the pod" to the API
-> server, securityContext answers "who is the process" to the kernel).
-
----
-
 ## 1. Two kinds of accounts in Kubernetes
 
 Kubernetes distinguishes:
@@ -27,14 +14,11 @@ Kubernetes distinguishes:
   custom controller, your own Python app listing Pods. Service accounts ARE
   Kubernetes objects (`kind: ServiceAccount`) and live in a namespace.
 
-The lecture's framing: humans on one side, robots on the other. The whole
-chapter is about how the robots authenticate.
-
-> **From my perspective at JPMC / Visa:** the in-house operators we wrote at
-> Visa had ServiceAccounts with carefully scoped RBAC. Every controller you
-> install (cert-manager, external-dns, ArgoCD, the metrics-server) ships with
-> its own ServiceAccount and a ClusterRole/Role. SAs are the universal "this
-> is what the workload is allowed to do" knob in any non-trivial cluster.
+Humans on one side, robots on the other. The whole chapter is about how the
+robots authenticate. Every controller you install (cert-manager,
+external-dns, ArgoCD, the metrics-server) ships with its own ServiceAccount
+and a ClusterRole/Role. SAs are the universal "this is what the workload is
+allowed to do" knob in any non-trivial cluster.
 
 ---
 
@@ -278,9 +262,8 @@ not. Decoded payload looks something like:
   Stops a token from outliving its workload.
 
 You can verify this yourself by exec'ing into a pod, `cat`ing the token,
-and pasting it into [jwt.io](https://jwt.io). The instructor demo'd
-exactly this. (Don't paste real cluster tokens into a public site — for
-study only, on a throwaway cluster.)
+and pasting it into [jwt.io](https://jwt.io). (Don't paste real cluster
+tokens into a public site — for study only, on a throwaway cluster.)
 
 ---
 
@@ -342,10 +325,9 @@ issued on demand instead of by the kubelet. Use it as
 
 ## 9. Mounting a Secret as a volume (the "dashboard" pattern)
 
-The instructor's "interesting" example was: deploying a *third-party*
-application **inside** the cluster (his example was a custom Kubernetes
-dashboard, but the same pattern applies to Prometheus, Grafana, ArgoCD —
-anything that needs to talk to the kube-api from inside).
+Deploying a *third-party* application **inside** the cluster (e.g. a custom
+Kubernetes dashboard, but the same pattern applies to Prometheus, Grafana,
+ArgoCD — anything that needs to talk to the kube-api from inside).
 
 Two ways to deliver the SA token to that pod:
 
@@ -478,43 +460,3 @@ kubectl set serviceaccount deployment/my-deploy dashboard-sa
 
 `$do` (alias for `--dry-run=client -o yaml`) is the workhorse here for any
 exam question that says "create a Pod that uses ServiceAccount X."
-
----
-
-## 13. TL;DR / takeaways
-
-1. ServiceAccount = identity for a workload. Namespaced object. Almost
-   empty — the interesting thing is the token it represents.
-2. Every namespace has a `default` SA that gets auto-mounted into every
-   pod unless you say otherwise.
-3. `serviceAccountName:` on the Pod spec selects which SA the pod uses.
-4. **v1.22** (KEP-1205): pods stopped using Secret tokens. Now use
-   TokenRequest API + projected volume → audience/time/object-bound JWT,
-   auto-rotated by the kubelet.
-5. **v1.24+** (KEP-2799): creating a SA no longer creates a Secret.
-   `kubectl create token` is the new way to mint a token for outside-cluster
-   use. If you really need a Secret token, create it yourself with the
-   `kubernetes.io/service-account.name` annotation.
-6. The pod-side contract is unchanged across all versions: token at
-   `/var/run/secrets/kubernetes.io/serviceaccount/token`.
-7. `automountServiceAccountToken: false` (on Pod or SA) opts out of the
-   automatic mount.
-8. Outside-the-cluster auth: `kubectl create token <sa>` → bearer token.
-   Inside-cluster: `serviceAccountName:` and read the file.
-
-### Resolved threads
-- [x] ServiceAccounts (open from `05-secrets.md`) — done here. The
-      `kubernetes.io/service-account-token` Secret type from the Secrets
-      chapter is exactly the legacy mechanism this chapter replaced.
-
-### Open threads
-- [ ] RBAC (Roles, RoleBindings, ClusterRoles, ClusterRoleBindings) — the
-      "what is this SA allowed to do" half. Comes in a later chapter; this
-      chapter only covers identity.
-- [ ] Projected volumes proper — used here for token + ca.crt + downwardAPI.
-      Full coverage in the Volumes chapter (still open from `04-configmaps.md`).
-- [ ] Pod Security Admission and seccomp/AppArmor profiles — CKS territory,
-      noted in `07-security-contexts.md`.
-- [ ] OIDC / external identity providers (workload identity, IRSA on EKS,
-      Workload Identity on GKE) — production patterns built on top of the
-      bound-token machinery. Beyond CKAD; worth a separate read post-cert.

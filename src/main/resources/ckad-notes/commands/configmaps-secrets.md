@@ -38,6 +38,29 @@ k create secret docker-registry regcred \
   --docker-email=a@b.c
 ```
 
+## Consume in a pod
+
+Three shapes; recall the fields with `explain` instead of memorizing them:
+
+```bash
+k explain pod.spec.containers.envFrom          # whole map/secret -> configMapRef / secretRef {name}
+k explain pod.spec.containers.env.valueFrom    # one key          -> configMapKeyRef / secretKeyRef {name, key}
+k explain pod.spec.volumes.configMap           # as files         -> configMap {name}
+k explain pod.spec.volumes.secret              # as files         -> secret {secretName}  <- secretName, not name
+```
+
+Bulk env injection has an imperative shortcut (no YAML editing):
+
+```bash
+k set env deployment/web --from=configmap/app-config     # all keys as env vars
+k set env deployment/web --from=secret/db-creds
+k set env deployment/web --from=configmap/app-config --prefix=CFG_
+```
+
+Single-key `valueFrom` and volume mounts have no imperative flag — generate the
+pod (`k run ... $do > pod.yaml`) and add the block. Docs (open on the exam):
+"Configure a Pod to Use a ConfigMap" / "Managing Secrets using kubectl".
+
 ## Inspect
 
 ```bash

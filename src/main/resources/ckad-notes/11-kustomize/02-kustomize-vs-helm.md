@@ -14,14 +14,10 @@ companion_diagrams:
 
 Helm is the *other* answer to the same question from ch.01 — "how do I customise
 manifests per environment without copy-pasting?" Same goal, fundamentally
-different mechanism. This chapter is orientation, not a Helm tutorial: know how
-the two differ and why a team picks one, because that's the level the exam (and a
-design review) cares about.
+different mechanism. Know how the two differ and why a team picks one.
 
-> **CKAD scope:** Kustomize is the examinable tool. Helm shows up only as general
-> ecosystem awareness — you won't be asked to author a chart in the exam. Learn
-> the *conceptual* difference here; don't rat-hole on Go-template syntax for the
-> cert.
+**CKAD scope:** Kustomize is the examinable tool. Helm shows up only as general
+ecosystem awareness — you won't be asked to author a chart in the exam.
 
 ---
 
@@ -186,72 +182,5 @@ three distinct techniques, and your work setup uses more than one:
    (no engine, no logic), and it can sit on top of plain *or* Kustomized YAML.
 
 These layer. You can have a Kustomize base+overlay whose values are filled in by
-a pipeline's variable injection — which is exactly your GKP setup below.
+a pipeline's variable injection.
 
----
-
-## 6. JPMC / GKP grounding
-
-What you described maps cleanly onto the model above. On **GKP (Gaia Kubernetes
-Platform)** — JPMC's in-house private-cloud Kubernetes — your team uses
-**Kustomize** for structural per-env config (technique #1), *and* **Jules**
-(your Jenkins-based pipeline layer) reads key/value pairs from `jules.yml` and
-**injects them as variables** into the resource definitions at pipeline time
-(technique #3).
-
-So you're effectively getting "both worlds" without adopting Helm's templating
-engine: Kustomize handles the structural deltas (different resources/patches per
-env), while Jules does the value substitution that Helm would otherwise do via
-`{{ .Values.* }}`. The substitution happens in CI rather than at `helm install`
-time, and it's plain key/value injection — no Go-template logic — which keeps the
-manifests reviewable as (near-)plain YAML in PRs.
-
-This is almost certainly GKP-specific platform glue rather than a stock OSS tool;
-the *pattern* (CI-time variable injection over Kustomize) is common, the
-`jules.yml` plumbing is JPMC's. If you drop the screenshots you mentioned, I'll
-fold a concrete "how Jules + Kustomize compose on GKP" worked example into this
-section — a real `jules.yml` → injected → rendered example would make this
-chapter's mental model land hard, and it's the kind of thing that's genuinely
-useful to have written down for your own team.
-
-> CKAD caveat: none of the GKP/Jules specifics are on the exam. The exam wants
-> Kustomize technique #1. The work context is here to make the concept stick.
-
----
-
-## TL;DR
-
-- Same problem as ch.01, opposite mechanism: Kustomize **patches** a valid base;
-  Helm **substitutes** values into a template.
-- Helm = Go templates + `values.yaml`, *and* a package manager with releases,
-  rollback, conditionals/loops/hooks.
-- Price of Helm's power: templates aren't valid YAML; complex charts get unreadable.
-- Use Kustomize for in-house manifests/small deltas; Helm for distributable apps
-  and third-party software. They coexist.
-- General model: overlay/patch (Kustomize) · template substitution (Helm) ·
-  variable injection (envsubst / CI). Your GKP setup = Kustomize + Jules injection.
-
-## Quick recall
-
-- [ ] Kustomize mechanism vs Helm mechanism? → patch/merge vs template/substitute.
-- [ ] Why aren't Helm templates valid YAML? → Go-template `{{ }}` placeholders.
-- [ ] Where do Helm's values come from? → `values.yaml` (+ `-f` / `--set` overrides).
-- [ ] Two things Helm gives that Kustomize doesn't? → packaging + release rollback (also logic/hooks).
-- [ ] What replaced Tiller in Helm 3? → nothing; release state lives in namespace Secrets.
-- [ ] Is Helm examinable on CKAD? → no hands-on; Kustomize is the examinable tool.
-- [ ] Render a chart without applying? → `helm template ./chart -f values.yaml`.
-
-## Resolved threads
-
-- *Why does ch.01's "advantages over Helm" claim Helm is harder?* → Go-template
-  syntax + invalid-until-rendered YAML + chart complexity, detailed here.
-
-## Open threads (carried into ch.03+)
-
-- [ ] `kustomization.yaml` syntax: `resources:`, overlay → base reference, the
-      first real hands-on (this is where ch.03 starts).
-- [ ] Patch mechanisms: strategic-merge vs JSON6902 vs `replicas:`/`images:`/
-      `namePrefix:`/`commonLabels:` transformers.
-- [ ] ConfigMap/Secret generators + hash-suffix behaviour.
-- [ ] (Optional, work) Worked `jules.yml` + Kustomize injection example on GKP —
-      pending your screenshots.

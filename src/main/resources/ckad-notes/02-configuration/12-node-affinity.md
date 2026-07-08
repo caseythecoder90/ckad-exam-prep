@@ -1,19 +1,5 @@
 # Node Affinity
 
-> **Section:** 02-configuration
-> **Course chapter:** 12 (Node Affinity)
-> **Why this is in CKAD:** Examinable. More YAML than nodeSelector, so
-> exam questions lean on getting the nested structure right and on the
-> required-vs-preferred distinction. The operators and the
-> DuringScheduling/DuringExecution naming are the testable details.
-> **Companion files:** `11-node-selectors.md` (node affinity is the
-> superset that solves nodeSelector's limitations),
-> `10-taints-and-tolerations.md` (the repel side; affinity is the attract
-> side). Diagram 23 in chapter 11 set up exactly the OR/NOT cases this
-> chapter solves.
-
----
-
 ## 1. Why node affinity exists
 
 Same goal as node selectors: **ensure pods land on particular nodes.**
@@ -27,8 +13,8 @@ key=value pairs, all ANDed, exact-match only — it cannot express:
 
 Node affinity adds all of that. The cost is more configuration: where
 `nodeSelector` is two indented lines, node affinity is a nested block
-with operators and rule types. The instructor's framing was honest —
-it's more complex and more verbose, but it's a true superset.
+with operators and rule types. It's more complex and more verbose, but
+it's a true superset.
 
 ![nodeSelector to node affinity progression](diagrams/25-nodeselector-to-affinity.png)
 
@@ -83,9 +69,7 @@ kubectl label nodes node-1 size=Large
 
 ## 3. Operators
 
-The `operator` is what gives affinity its power. The instructor said to
-check the docs for the full list — here it is, since it's worth having
-in one place:
+The `operator` is what gives affinity its power. The full list:
 
 | Operator       | Meaning                                              | `values`?   |
 |----------------|------------------------------------------------------|-------------|
@@ -96,7 +80,7 @@ in one place:
 | `Gt`           | label value greater than (numeric, single value)     | one value   |
 | `Lt`           | label value less than (numeric, single value)        | one value   |
 
-The two that solve the instructor's motivating examples:
+The two that solve the motivating examples:
 
 ```yaml
 # "Large OR Medium" — In with multiple values
@@ -155,11 +139,10 @@ together**:
 - Execution: same as above — label changes mid-run are ignored.
 - Use when placement is a nice-to-have, not a hard requirement.
 
-> **The DuringScheduling distinction maps directly to your earlier
-> question about node selectors:** `required` behaves like `nodeSelector`
-> (no match → Pending). `preferred` is the softer option that has no
-> nodeSelector equivalent — it lets the pod run somewhere even if the
-> ideal node isn't available.
+> **The DuringScheduling distinction maps directly onto node selectors:**
+> `required` behaves like `nodeSelector` (no match → Pending).
+> `preferred` is the softer option that has no nodeSelector equivalent —
+> it lets the pod run somewhere even if the ideal node isn't available.
 
 The `preferred` type also takes a **weight** (1–100), letting you rank
 multiple soft preferences:
@@ -183,14 +166,13 @@ rarely makes you write the `preferred` form from scratch, but recognise it.)
 
 ### IgnoredDuringExecution — what it actually means
 
-This is the part you flagged as confusing, and it's worth being precise.
 `IgnoredDuringExecution` is about **what happens to an already-running
 pod when the cluster changes underneath it.**
 
-The instructor's scenario: a pod is running on a node labeled
-`size=Large`. An admin runs `kubectl label nodes node-1 size-` (removes
-the label) or changes it to `size=Small`. The pod's affinity rule no
-longer matches the node it's on. **What happens to the running pod?**
+Scenario: a pod is running on a node labeled `size=Large`. An admin runs
+`kubectl label nodes node-1 size-` (removes the label) or changes it to
+`size=Small`. The pod's affinity rule no longer matches the node it's on.
+**What happens to the running pod?**
 
 With both currently-available types (`...IgnoredDuringExecution`), the
 answer is: **nothing.** The label change is *ignored* for pods that are
@@ -202,8 +184,7 @@ The official docs put it the same way: <cite index="4-1">"IgnoredDuringExecution
 
 ### The "planned" type — RequiredDuringExecution
 
-The instructor mentioned a third type he wasn't sure had shipped. **As
-of 2026, it still has not.** The proposed
+A third type is proposed but **as of 2026 has not shipped.** The proposed
 `requiredDuringSchedulingRequiredDuringExecution` would add eviction:
 <cite index="4-1">There are future plans to offer requiredDuringSchedulingRequiredDuringExecution which will evict pods from nodes as soon as they don't satisfy the node affinity rule(s).</cite>
 
@@ -232,12 +213,12 @@ A practical rule:
   elsewhere (needs the GPU, needs the licensed node, compliance pins it
   to a zone). Accept that it may stay `Pending` if no node qualifies.
 - **`preferred`** when you'd like the placement but running somewhere
-  beats not running at all (you said this exact thing — "if it's more
-  important that the job runs, use preferred").
+  beats not running at all — if it's more important that the job runs,
+  use `preferred`.
 
-The instructor's data-processing example actually argues for `required`
-(you don't want a heavy job on a small node), but the "must run" framing
-is where `preferred` earns its place.
+The data-processing example argues for `required` (you don't want a heavy
+job on a small node), but the "must run" framing is where `preferred`
+earns its place.
 
 ---
 
@@ -327,47 +308,3 @@ kubectl get pod myapp -o wide        # shows which NODE it landed on
 Because the structure is fiddly and there's no generator, the single
 biggest time-saver is the docs page — pull the `requiredDuring...`
 example and edit it rather than typing the nesting from scratch.
-Practice this in killer.sh until the nesting is muscle memory.
-
----
-
-## 10. TL;DR / takeaways
-
-1. **Node affinity is a superset of nodeSelector** — same goal (pin pods
-   to labeled nodes), more expressive (operators, OR/NOT, soft rules).
-2. Structure: `spec.affinity.nodeAffinity.<type>.nodeSelectorTerms[].matchExpressions[]`
-   with `key` / `operator` / `values`.
-3. **Operators:** `In`, `NotIn`, `Exists`, `DoesNotExist`, `Gt`, `Lt`.
-   `In` gives you OR; `NotIn`/`DoesNotExist` give you anti-affinity.
-4. **Type name = two questions:** DuringScheduling (`required` vs
-   `preferred`) + DuringExecution (`Ignored` vs the planned `Required`).
-5. **Two types exist today**, both `IgnoredDuringExecution`:
-   `requiredDuringSchedulingIgnoredDuringExecution` (Pending if no match)
-   and `preferredDuringSchedulingIgnoredDuringExecution` (runs anyway).
-6. **IgnoredDuringExecution:** a running pod is NOT evicted when node
-   labels change to break its affinity. Affinity is checked only at
-   scheduling time.
-7. **`RequiredDuringExecution` is planned, not shipped** (as of 2026). It
-   would evict running pods on label change. Don't expect it on the exam.
-8. `required` no-match → `Pending`. Diagnose with `kubectl describe pod`
-   → `FailedScheduling` / "didn't match node affinity/selector."
-9. No imperative generator — always hand-edit YAML. Use the open docs tab.
-
-### Resolved threads
-- [x] **Node affinity** (open from `11-node-selectors.md`) — covered.
-      Solves the OR/NOT/range cases nodeSelector couldn't (diagram 23
-      → diagram 25). `required` = nodeSelector's hard behavior;
-      `preferred` is the soft option nodeSelector lacked.
-
-### Open threads
-- [ ] **Pod affinity / anti-affinity** — `podAffinity` and
-      `podAntiAffinity` under the same `spec.affinity`. Target other
-      *pods* (co-locate / spread) instead of nodes, using `topologyKey`.
-      Later chapter. Note: pods DO have a dedicated anti-affinity object,
-      unlike nodes (which use `NotIn`).
-- [ ] **Combining affinity with taints** — the full "dedicate a node"
-      pattern: taint to repel others + affinity to attract the target
-      pod. Framed in `10-taints-and-tolerations.md` §4 and
-      `11-node-selectors.md` §8.
-- [ ] **`RequiredDuringExecution`** — track whether this ships in a
-      future Kubernetes release; would add affinity-driven eviction.

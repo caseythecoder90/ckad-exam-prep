@@ -1,15 +1,5 @@
 # ConfigMaps
 
-> **Section:** 02-configuration
-> **Course chapter:** 04 (ConfigMaps)
-> **Why this is in CKAD:** High-frequency exam resource. You will create
-> ConfigMaps imperatively under time pressure and wire them into Pods three
-> different ways. The instructor's last slide showed `envFrom`, single-`env`,
-> and volume mounts quickly without explaining them — sections 5 and 6 below
-> cover those properly, since the exam tests choosing the right one.
-
----
-
 ## 1. What a ConfigMap is and why
 
 When config lives inline in each Pod's `env:` list, it's scattered and
@@ -28,7 +18,7 @@ shapes.
 
 ## 2. Creating a ConfigMap — imperative
 
-Two `--from-*` sources, same as the instructor's slides.
+Two `--from-*` sources.
 
 From literals (most common in the exam — fast, no file needed):
 
@@ -56,10 +46,6 @@ kubectl create configmap app-config --from-file=app_config.properties
 > directory to load every file in it as its own key. (Contrast with
 > `--from-literal`, which creates clean `KEY=value` pairs — usually what you
 > want for env-var-style config.)
-
-> Slide typo to ignore: the instructor's slide shows
-> `--from-literal=APP_MOD=prod` (missing the `E`). The intended key is
-> `APP_MODE`. Mentioned only so the note matches reality, not the screenshot.
 
 ---
 
@@ -107,8 +93,7 @@ kubectl describe configmaps app-config # shows the actual keys + values
 
 ## 5. Injecting into a Pod — the three methods
 
-This is the conceptual core and the part the instructor rushed. Same
-`app-config` ConfigMap; three different ways a container can consume it.
+Same `app-config` ConfigMap; three different ways a container can consume it.
 
 ![ConfigMap consumption methods](./diagrams/08-configmap-consumption-methods.png)
 
@@ -137,7 +122,7 @@ Result inside the container: `APP_COLOR=blue` and `APP_MODE=prod` both exist as
 env vars, automatically. This is the "inject all of this component's config"
 pattern and the most common real-world usage.
 
-Structural notes that matter (he did not explain these):
+Structural notes that matter:
 
 - `envFrom:` is a **list** (note the `-`), and each item is a *source
   reference*, not a variable. `configMapRef:` (singular ref to the whole map)
@@ -177,9 +162,9 @@ Mounts the ConfigMap as a **volume**. Each key becomes a **file**; the file's
 name is the key, the file's contents are the value. The app reads config from
 files, not environment.
 
-He showed only the `volumes:` fragment and moved on. The complete, working
-pattern needs **both** a `volumes:` entry and a `volumeMounts:` entry — the
-volume alone does nothing until a container mounts it:
+The complete, working pattern needs **both** a `volumes:` entry and a
+`volumeMounts:` entry — the volume alone does nothing until a container mounts
+it:
 
 ```yaml
 apiVersion: v1
@@ -190,7 +175,7 @@ spec:
   containers:
     - name: simple-webapp-color
       image: simple-webapp-color
-      volumeMounts:                    # <-- the half he didn't show
+      volumeMounts:                    # <-- both halves are required
         - name: app-config-volume
           mountPath: /etc/config
   volumes:
@@ -213,7 +198,24 @@ a natural fit. It also picks up ConfigMap updates without recreating the Pod
 (env-var forms do not — they're fixed at container start). This is a forward
 reference into the Volumes chapter; the mechanics of `volumes:` /
 `volumeMounts:` get full treatment there. Captured here because the exam tests
-the ConfigMap-as-volume pattern directly and the lecture left it half-shown.
+the ConfigMap-as-volume pattern directly.
+
+### 5.4 Finding these fields without memorizing (exam technique)
+
+Don't memorize the field names — recall them with `kubectl explain`. One lookup
+per consumption shape:
+
+```bash
+k explain pod.spec.containers.envFrom          # whole map -> configMapRef {name}
+k explain pod.spec.containers.env.valueFrom    # one key   -> configMapKeyRef {name, key}
+k explain pod.spec.volumes.configMap           # as files  -> configMap {name, items}
+```
+
+`--recursive` dumps the whole subtree at once
+(`k explain pod.spec.containers.env --recursive`). On the exam kubernetes.io is
+open — the page **"Configure a Pod to Use a ConfigMap"** has copy-paste YAML for
+all three. Between `explain` and the docs there's nothing here you need to
+memorize; you need to know *which of the three* you want.
 
 ---
 
@@ -255,29 +257,3 @@ Decision shortcut: everything as env → `envFrom`; one value (or rename) →
   ```
   Most "value didn't show up" failures are a `key:` name mismatch or a
   missing `volumeMounts` half — check both first.
-
----
-
-## 8. Key takeaways
-
-1. ConfigMap = centralized non-sensitive key/value config. Workflow is always
-   create → inject.
-2. Create: imperative `--from-literal` (repeat per key) or `--from-file`
-   (filename = key, contents = value); declarative under **`data:`** (no
-   `spec:`).
-3. View: `get cm` shows key *count*; `describe cm` shows the actual values.
-4. Three consumption methods — memorize the field names, they're a trap:
-   - **`envFrom: + configMapRef`** → whole map → all env vars
-   - **`env: + valueFrom: + configMapKeyRef`** → one key → one env var
-   - **`volumes: + configMap`** (+ `volumeMounts`) → keys → files
-5. `configMapRef` (whole) vs `configMapKeyRef` (single key) — the `Key`
-   distinguishes them.
-6. Volume method needs BOTH `volumes:` and `volumeMounts:`; only it reflects
-   later ConfigMap edits without a Pod restart.
-
-### Open threads
-- [ ] Secrets — same three injection shapes with `secretRef` /
-      `secretKeyRef` / `secret`, plus base64 encoding — next chapter
-- [ ] Volumes proper — `volumes:`/`volumeMounts:` mechanics, beyond ConfigMaps
-- [ ] Per layout doc: add ConfigMap commands to `commands/configmaps-secrets.md`
-      and the global `commands.md` (the file already exists in the tree)

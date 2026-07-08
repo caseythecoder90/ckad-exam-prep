@@ -1,13 +1,5 @@
 # Environment Variables
 
-> **Section:** 02-configuration
-> **Course chapter:** 03 (Environment Variables)
-> **Why this is in CKAD:** `env:` is one of the most frequently touched fields
-> in the exam — directly, and as the consumption point for ConfigMaps and
-> Secrets (the next two lectures). Short lecture, high-frequency mechanic.
-
----
-
 ## 1. The Docker parallel
 
 In Docker you inject an environment variable at run time with `-e`:
@@ -68,8 +60,8 @@ YAML-indentation failure mode).
 
 ## 3. Three ways to source a value
 
-The lecture's key conceptual slide: the `env:` structure is always the same; the
-difference is *where the value comes from*.
+The `env:` structure is always the same; the difference is *where the value
+comes from*.
 
 ![Three env value source types](./diagrams/07-env-value-source-types.png)
 
@@ -156,25 +148,3 @@ the other, never both.
   This is the same `exec` workflow from the DNS chapter — useful when an env var
   "isn't taking" (often a ConfigMap/Secret key name mismatch, which surfaces
   here in later chapters).
-
----
-
-## 5. Key takeaways
-
-1. `-e KEY=VALUE` (Docker) → a `name`/`value` list item under `env:` (Pod).
-2. `env:` is a **list**; each item is one variable; the leading dash is
-   mandatory.
-3. Three value sources, same `env:` shape:
-   literal `value:`; `valueFrom: configMapKeyRef`;
-   `valueFrom: secretKeyRef`.
-4. `value:` and `valueFrom:` are mutually exclusive per variable.
-5. Quote numeric/boolean-looking values (string field).
-6. Speed path: `k run --env=...` for literals; edit YAML for ConfigMap/Secret
-   refs; `k exec -- env` to verify.
-
-### Open threads
-- [ ] ConfigMaps: creation (`--from-literal`, `--from-file`), `configMapKeyRef`
-      vs `envFrom:` (whole-map injection) — `04-configmaps.md`
-- [ ] Secrets: same patterns, base64 encoding, `secretKeyRef` /
-      `envFrom: secretRef` — chapter after ConfigMaps
-- [ ] Carried from ch.01: writable container layer → Volumes

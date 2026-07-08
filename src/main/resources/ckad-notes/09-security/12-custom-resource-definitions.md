@@ -46,7 +46,7 @@ The Deployment controller watches Deployment objects and creates/updates
 ReplicaSets. The ReplicaSet controller watches ReplicaSets and creates/deletes
 Pods. The Job controller watches Jobs and creates Pods.
 
-### Your question: are controllers separate processes?
+### Are controllers separate processes?
 
 No — most built-in controllers run inside a single binary called
 **kube-controller-manager**. Each controller is a separate Go goroutine
@@ -73,10 +73,9 @@ Control Plane Node 1                    Control Plane Node 2 (standby)
 ```
 
 The Kubernetes source code for each controller lives in its own package
-(e.g., `deployment_controller.go` as shown in the lecture screenshots). The
-instructor showed a snippet of this file: the `DeploymentController` struct
-has a `Run()` method that starts watching and syncing, and an
-`addReplicaSet()` method that creates the ReplicaSet child objects.
+(e.g., `deployment_controller.go`). The `DeploymentController` struct has a
+`Run()` method that starts watching and syncing, and an `addReplicaSet()`
+method that creates the ReplicaSet child objects.
 
 ### Every built-in resource type has a matching controller
 
@@ -94,7 +93,7 @@ has a `Run()` method that starts watching and syncing, and an
 ## 2. Custom Resources — extending Kubernetes
 
 What if you want Kubernetes to manage something that isn't a built-in type?
-The instructor's example: a `FlightTicket` resource for booking flights.
+Example: a `FlightTicket` resource for booking flights.
 
 ```yaml
 # flightticket.yml
@@ -317,74 +316,3 @@ access it directly — rare, mainly for migration).
 If a CRD defines `shortNames: [ft]`, you can use `kubectl get ft` instead
 of `kubectl get flighttickets`. On the exam this saves keystrokes. Check
 `kubectl api-resources` to discover shortNames for any resource.
-
----
-
-## 8. JPMC context
-
-CRDs are fundamental to the operator pattern, and your stack at JPMC uses
-several operator-managed CRDs:
-
-- **CockroachDB**: the CockroachDB operator defines CRDs like
-  `CrdbCluster` (or similar). When you create a `CrdbCluster` object, the
-  operator's custom controller watches it and creates the StatefulSets,
-  Services, PVCs, and ConfigMaps needed to run CockroachDB. This is
-  exactly the pattern the lecture describes — CRD defines the schema,
-  controller does the work.
-
-- **Calico**: your `default-deny` NetworkPolicies work because Calico
-  installs CRDs for its own types (`NetworkPolicy`, `GlobalNetworkPolicy`,
-  `HostEndpoint`, etc.). The Calico controller watches these and programs
-  iptables/eBPF rules on each node.
-
-- **Contour**: the HTTPProxy CRD (`projectcontour.io/v1 HTTPProxy`) is
-  a custom resource that Contour's controller watches and converts into
-  Envoy xDS configuration. When you create an HTTPProxy object, the
-  Contour controller generates the Envoy listener and route config.
-
-In all three cases the same pattern holds: CRD defines the resource type,
-a controller watches it, etcd stores the desired state. The operator
-pattern is just the combination of CRD + controller packaged together.
-
-When you eventually write your own operators (a great bridge from Spring
-Boot into the Go ecosystem), you'll use frameworks like Kubebuilder or
-Operator SDK that generate the CRD and controller scaffolding for you.
-
----
-
-## 9. TL;DR
-
-- Every Kubernetes object follows the **Resource → etcd → Controller**
-  pattern: resources declare desired state, etcd persists it, controllers
-  reconcile actual state to match.
-- Built-in controllers all run inside `kube-controller-manager` as
-  separate goroutines within a single process (leader-elected for HA).
-- A **CRD** (Custom Resource Definition) teaches Kubernetes a new resource
-  type: defines the API group, names, versions, scope, and validation schema.
-- CRDs use `apiextensions.k8s.io/v1` and require an `openAPIV3Schema`.
-- `metadata.name` must be `<plural>.<group>`.
-- After creating a CRD you can CRUD custom resources, but without a
-  custom controller nothing acts on them — they just sit in etcd.
-- The operator pattern = CRD + custom controller, and it's the backbone
-  of CockroachDB, Calico, Contour, and most production Kubernetes add-ons.
-
----
-
-## Open threads
-
-- [ ] **Custom controllers** (next chapter): the Go/Python code that watches
-  custom resources via informers and work queues, takes action, and updates
-  status. The controller is what makes a CRD useful.
-- [ ] **Operator pattern** (CKA scope): CRD + controller + lifecycle
-  management packaged as a single deployable unit. Frameworks like
-  Kubebuilder and Operator SDK generate the scaffolding.
-- [ ] **Conversion webhooks** (from ch11): when a CRD supports multiple
-  versions, a conversion webhook handles round-trip conversion between them.
-- [ ] **Admission webhooks for CRDs**: you can point a
-  ValidatingWebhookConfiguration at your custom resources to enforce
-  policies beyond what openAPIV3Schema supports.
-
-## Resolved threads
-
-- [x] **CRD context from ch11**: the `/kodekloud.com` example and how CRDs
-  relate to API versioning and deprecation rules — fully covered here.

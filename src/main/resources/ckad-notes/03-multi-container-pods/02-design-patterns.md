@@ -1,15 +1,8 @@
 # Multi-Container Pods: Design Patterns
 
-> **Section:** 03-multi-container-pods
-> **Course chapter:** 2 (Multi-Container PODs - Design Patterns)
-> **Why this is in CKAD:** Init containers are core, frequently-tested material; you must be able to add `initContainers` to a pod spec and reason about ordering and failure. Native sidecar containers (init container with `restartPolicy: Always`) are newer but increasingly in scope. The exam loves the lifecycle/ordering distinctions between these patterns.
-> **Companion files:** `01-multi-container-pods-intro.md` (shared lifecycle/network/storage; this chapter delivers on the "native sidecar" forward note made there)
-
----
-
 ## 1. Three patterns, one question: *when* does each container run?
 
-The instructor frames three ways containers can be combined in a single pod. The only thing that really separates them is the **lifecycle relationship** between the helper container(s) and the main app:
+Three ways containers can be combined in a single pod. The only thing that really separates them is the **lifecycle relationship** between the helper container(s) and the main app:
 
 | Pattern | Defined under | When the helper runs | Lives for the pod's life? |
 |---|---|---|---|
@@ -48,7 +41,7 @@ Characteristics:
 - **No guaranteed shutdown order.** On termination they are stopped without a defined sequence.
 - Both must keep running for the pod to stay healthy; both count toward readiness.
 
-This is the *traditional* way people ran "sidecars" before native sidecars existed (your team's usage almost certainly refers to this form). It works, but the lack of ordering and the shutdown behavior cause real problems, which is exactly what the sidecar pattern in section 4 fixes.
+This is the *traditional* way people ran "sidecars" before native sidecars existed. It works, but the lack of ordering and the shutdown behavior cause real problems, which is exactly what the sidecar pattern in section 4 fixes.
 
 ## 3. Regular init containers
 
@@ -133,7 +126,7 @@ One-line rule: **if a helper must run alongside the app but needs to start first
 
 ## 6. Real-world: the logging sidecar (EFK)
 
-The instructor's example is a logging pipeline. The app writes logs; a **Filebeat sidecar** in the same pod tails those logs off a shared volume and ships them to **ElasticSearch**, where **Kibana** queries and visualizes them. The application code knows nothing about the logging backend - the sidecar owns that concern.
+A logging pipeline: the app writes logs; a **Filebeat sidecar** in the same pod tails those logs off a shared volume and ships them to **ElasticSearch**, where **Kibana** queries and visualizes them. The application code knows nothing about the logging backend - the sidecar owns that concern.
 
 ![Filebeat logging sidecar shipping app logs to ElasticSearch and Kibana](./diagrams/04-sidecar-logging-efk.png)
 
@@ -141,7 +134,7 @@ This is the canonical "why sidecars exist" story: cross-cutting work (log shippi
 
 ## 7. Exam-pattern gotchas
 
-- **`command` is a YAML list, not a string.** The slides write `command: 'wait-for-db-to-start.sh'` for readability, but that fails schema validation. Real YAML needs a list: `command: ['wait-for-db-to-start.sh']` or `command: ["sh", "-c", "..."]`.
+- **`command` is a YAML list, not a string.** A bare string like `command: 'wait-for-db-to-start.sh'` fails schema validation. Real YAML needs a list: `command: ['wait-for-db-to-start.sh']` or `command: ["sh", "-c", "..."]`.
 - **`initContainers` is a sibling of `containers`**, both directly under `spec`. Putting it inside `containers` (or mis-indenting it) is a classic failure.
 - **Container-level `restartPolicy` vs pod-level.** The `restartPolicy: Always` that defines a sidecar sits *inside an init container entry*. It is a different field from `spec.restartPolicy` (the pod-wide one). Only `Always` is meaningful for a sidecar.
 - **Native sidecars need a recent cluster (1.29+).** If `restartPolicy` on an init container is rejected, the cluster is too old - use co-location instead.
@@ -169,20 +162,3 @@ kubectl logs <pod> -c db-checker            # logs from a specific init containe
 kubectl logs <pod> -c log-shipper           # logs from the sidecar
 kubectl explain pod.spec.initContainers     # recall the field path under exam pressure
 ```
-
-## 9. TL;DR / takeaways
-
-- Three patterns, distinguished by lifecycle: **co-located** (peers, no ordering), **regular init** (run-to-completion before the app), **sidecar** (init container + `restartPolicy: Always` that starts first and stays up).
-- `initContainers` is a sibling of `containers` under `spec`; init containers run **sequentially, to completion**, before app containers start.
-- A **native sidecar** is just an init container with `restartPolicy: Always`: starts before the app, runs for the pod's life, stops after the app, and does not hang a Job.
-- **Co-located vs sidecar:** same end state (both running), but only the sidecar guarantees start-before / stop-after ordering and is Job-safe.
-- `command` must be a **list**; debug init/sidecar containers with `-c <container>`; watch `Init:` status to diagnose.
-- Canonical use case: a **logging sidecar** (Filebeat -> ElasticSearch -> Kibana) ships logs so the app stays unaware of the backend.
-
----
-
-### Open threads
-- [x] Resolves the native-sidecar forward note from `01-multi-container-pods-intro.md`.
-- [ ] If the course breaks out **init containers** into their own lab, cross-link the practice questions here.
-- [ ] Revisit **Jobs/CronJobs** later: the "sidecar does not block Job completion" point matters most there.
-- [ ] Pod lifecycle phases (`Pending` -> `Init:` -> `Running`) tie into the upcoming **pod conditions / probes** material - link when reached.

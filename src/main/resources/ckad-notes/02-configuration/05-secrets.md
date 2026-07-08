@@ -1,20 +1,16 @@
 # Secrets
 
-> **Section:** 02-configuration
-> **Course chapter:** 05 (Secrets)
-> **Why this is in CKAD:** Frequently tested resource, and the field names
-> (`secretRef`, `secretKeyRef`, `secret:`) are a close-but-not-identical mirror
-> of ConfigMap field names — a classic exam trap. Also the place where
-> "encoded vs. encrypted" matters; expect a question.
-> **Companion file:** Read alongside `04-configmaps.md` — the shapes are
-> ~90% the same. This chapter focuses on what's *different*.
+The field names (`secretRef`, `secretKeyRef`, `secret:`) are a
+close-but-not-identical mirror of ConfigMap field names — a classic exam trap.
+Read alongside `04-configmaps.md`; the shapes are ~90% the same, so this chapter
+focuses on what's *different*.
 
 ---
 
 ## 1. The problem Secrets solve
 
-Hardcoding credentials in source code (the instructor's Python DB example) is
-the obvious wrong answer: they leak through Git history, log scrapers, and
+Hardcoding credentials in source code is the obvious wrong answer: they leak
+through Git history, log scrapers, and
 every developer who pulls the repo. Moving them to a ConfigMap is **also
 wrong** — ConfigMap values are stored in plain text and visible to anyone with
 `get configmaps` permission. Sensitive values need a different resource.
@@ -34,12 +30,10 @@ What makes a Secret different from a ConfigMap:
 - Not surfaced in command-output / logs by default the way env-var values
   sometimes are.
 
-What makes a Secret **not** different — and this is the critical point your
-question went straight to:
+What makes a Secret **not** different:
 
-> **base64 is encoding, not encryption.** The instructor confirms this in his
-> follow-up *"quick note about secrets"* in the next module. Anyone with read
-> access to the Secret can decode the value with one command. See section 4.
+> **base64 is encoding, not encryption.** Anyone with read access to the Secret
+> can decode the value with one command. See section 4.
 
 ---
 
@@ -68,10 +62,7 @@ encoding for you before sending it to the API server. The object that lands in
 etcd has base64-encoded values; the original plaintext is gone from the wire
 after the API call.
 
-### 2.2 From a file (clearing up the confusion)
-
-You asked about this — the slide shows it as part of the "Imperative" section
-but it looked like it was doing something file-based. The clarification:
+### 2.2 From a file
 
 ```bash
 kubectl create secret generic <secret-name> \
@@ -123,10 +114,7 @@ kubectl create -f secret-data.yaml
 kubectl apply  -f secret-data.yaml
 ```
 
-> **Worth clarifying about the instructor's lecture framing.** In this lecture
-> he says "fill in the plaintext, then `kubectl create` encrypts it for you."
-> Two things to refine: (1) it's encoding, not encryption — he corrects this
-> himself in the *"quick note about secrets"* in the very next module, and
+> **Two things to keep straight:** (1) it's encoding, not encryption; and
 > (2) for the declarative path you encode the values *yourself before* writing
 > them into `data:`. `kubectl create -f` does not re-encode what you put in
 > the file. Putting raw plaintext under `data:` will be rejected as invalid
@@ -155,8 +143,7 @@ kubectl apply  -f secret-data.yaml
 
 ## 4. base64 is encoding, not encryption
 
-This is the conceptual point of the chapter and the answer to your question.
-Your skepticism is exactly right.
+This is the conceptual point of the chapter.
 
 ![Secrets base64 vs encryption](./diagrams/09-secrets-base64-not-encryption.png)
 
@@ -193,10 +180,7 @@ encoding doesn't slow them down for more than one shell pipe.
   whose Pods actually use it. When the dependent Pod is deleted, the kubelet
   also deletes its local copy of the Secret data from that node.
 
-### The instructor's "quick note about secrets"
-
-He covers this exact issue at the start of the next module. The practical
-rules he gives, all worth following:
+### Practical rules
 
 - **Do not check Secret object definitions into source control.** A manifest
   with `data:` (base64) or `stringData:` (plaintext) is effectively a
@@ -205,13 +189,9 @@ rules he gives, all worth following:
 - **Enable encryption at rest for Secrets in etcd.** Cluster-level config; not
   on by default. Without it, anyone who can read the etcd data files (a node
   compromise, a backup leak) gets every Secret in cleartext.
-- **Kubernetes already does some helpful things for you** — same points as
-  the "Selective transmission" and "tmpfs mounts" bullets above. Worth
-  internalizing as the *built-in* protections so you can name them in an
-  interview.
-- **For real workloads, use a dedicated tool.** He calls out Helm Secrets and
-  HashiCorp Vault by name; the broader category is **external secret stores**
-  — Vault, cloud KMS (AWS/GCP/Azure), Sealed Secrets, External Secrets
+- **For real workloads, use a dedicated tool.** Helm Secrets and HashiCorp
+  Vault are common; the broader category is **external secret stores** —
+  Vault, cloud KMS (AWS/GCP/Azure), Sealed Secrets, External Secrets
   Operator, SOPS-encrypted manifests, etc. These solve the storage,
   rotation, and audit problems that built-in Secrets don't.
 
@@ -235,10 +215,6 @@ rules he gives, all worth following:
 > key. Encryption at rest in etcd is a separate cluster-level feature you opt
 > into. The practical protection for Secret values is RBAC.
 
-That phrasing — including the *"by default"* and the encryption-at-rest
-caveat — is the answer that signals you actually understand the mechanism, not
-just the marketing.
-
 ---
 
 ## 5. Viewing Secrets
@@ -253,10 +229,10 @@ kubectl get secret app-secret -o yaml         # shows base64-encoded values
 see them, and they come back base64-encoded.
 
 You'll also see a `default-token-...` secret of type
-`kubernetes.io/service-account-token` in every namespace (from the
-"Viewing Secrets" slide). That's auto-created for the namespace's default
-ServiceAccount and used by Pods to talk to the API server. Don't delete it.
-It's a forward reference into the ServiceAccounts chapter.
+`kubernetes.io/service-account-token` in every namespace. That's auto-created
+for the namespace's default ServiceAccount and used by Pods to talk to the API
+server. Don't delete it. It's a forward reference into the ServiceAccounts
+chapter.
 
 ---
 
@@ -316,8 +292,8 @@ spec:
 
 ### 6.3 Method 3 — volume mount (keys → files)
 
-The instructor showed only the `volumes:` half; same as ConfigMaps, the
-complete pattern needs a matching `volumeMounts:` on the container:
+Same as ConfigMaps, the complete pattern needs a matching `volumeMounts:` on
+the container:
 
 ```yaml
 spec:
@@ -334,8 +310,7 @@ spec:
         secretName: app-secret                # <-- note: secretName, not name
 ```
 
-Result, inside the container — exactly what his "Secrets in Pods as Volumes"
-slide shows:
+Result, inside the container:
 
 ```bash
 $ ls /opt/app-secret-volumes
@@ -349,6 +324,21 @@ Each key becomes a file; the file's contents are the **decoded** value.
 Stored on tmpfs (RAM) on the node, not on disk. Like ConfigMap volume mounts,
 this form picks up Secret updates without restarting the Pod (after a short
 sync delay) — env-var forms do not.
+
+### 6.4 Finding these fields without memorizing (exam technique)
+
+Same recall trick as ConfigMaps, with `secret*` in place of `configMap*`:
+
+```bash
+k explain pod.spec.containers.envFrom          # whole secret -> secretRef {name}
+k explain pod.spec.containers.env.valueFrom    # one key      -> secretKeyRef {name, key}
+k explain pod.spec.volumes.secret              # as files     -> secret {secretName, items}
+```
+
+That last lookup also settles the one broken parallel — `explain` shows the
+volume field is **`secretName`**, not `name`. Docs (open on the exam):
+**"Managing Secrets using kubectl"** / **"Distribute Credentials Securely Using
+Secrets"** have copy-paste YAML for all three shapes.
 
 ---
 
@@ -378,47 +368,8 @@ sync delay) — env-var forms do not.
   k exec simple-webapp-color -- ls   /opt/app-secret-volumes
   k exec simple-webapp-color -- cat  /opt/app-secret-volumes/DB_Password
   ```
-- **Common exam stumbles to pre-empt:**
-  - `secretName:` (volume) vs `name:` (everywhere else) — the one broken
-    parallel.
-  - `configMapRef` vs `secretRef` (whole), and `configMapKeyRef` vs
-    `secretKeyRef` (single key) — silent failures if swapped.
+- **Common exam stumbles to pre-empt** (the field-name traps live in §6/§6.4):
   - `data:` requires base64-encoded values; `stringData:` accepts plaintext.
     Mixing them up gives a `secret data illegal base64 data` error.
   - Forgot `-n` on `echo` → trailing newline encoded into your secret →
     mysterious auth failures.
-
----
-
-## 8. Key takeaways
-
-1. Secrets exist because both hardcoded creds and ConfigMaps store sensitive
-   values in plain text — the workflow is identical: create, then inject.
-2. Imperative vs declarative is about the *command you run*, not whether a
-   file is involved. `--from-file` on imperative `create secret` is still
-   imperative — it's reading data, not a manifest.
-3. **Imperative create accepts plaintext** (`--from-literal=K=V`) and encodes
-   for you. **Declarative `data:` requires base64**; `stringData:` is the
-   plaintext-friendly alternative.
-4. base64 is encoding, not encryption — the instructor confirms this in the
-   *"quick note about secrets"* in the next module. Anyone with `get secrets`
-   can decode in one shell command. His practical rules: don't commit Secret
-   manifests to source control, enable encryption at rest in etcd, and for
-   real workloads use external tooling like Helm Secrets or HashiCorp Vault.
-5. Three consumption methods mirror ConfigMaps — substitute `secret*`/
-   `secretKeyRef`/`secretRef` for the `configMap*` versions. **Volume form
-   uses `secretName:`, not `name:`** — the one place the parallel breaks.
-6. `describe secret` hides values; `get -o yaml` shows them base64-encoded.
-7. Mounted Secret files live on tmpfs (RAM) on the node, not on disk.
-
-### Resolved threads
-- [x] Secrets — same three injection shapes as ConfigMaps, plus base64 (done)
-
-### Open threads
-- [ ] Volumes proper — `volumes:`/`volumeMounts:` mechanics beyond
-      ConfigMaps/Secrets
-- [ ] ServiceAccounts — the `default-token-*` Secret in §5 is a forward ref
-- [ ] Per layout doc: extend `commands/configmaps-secrets.md` and the global
-      `commands.md` with the secret commands from §7 (the file already exists
-      in the tree — paste current contents next time and I'll generate the
-      additions in its existing style)
