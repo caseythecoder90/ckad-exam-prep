@@ -85,4 +85,7 @@ Always confirm the current version, duration, and passing score on the official 
 
 Notes were built while working through a CKAD video course and expanded well beyond it with additional depth. They are original write-ups intended for study and sharing.
 
-A license has not been chosen yet. Until one is added, all rights are reserved; if you would like to reuse this material, please open an issue. (A permissive license such as CC BY 4.0 for the notes and MIT for future code is the likely direction.)
+This repository is dual-licensed (see [`LICENSE`](LICENSE)):
+
+- **Notes & documentation** (`notes/`, diagrams, this README) — [CC BY 4.0](LICENSE-CC-BY-4.0). Reuse and adapt freely, including commercially, with attribution.
+- **Code** (`examples/`, `app/`, scripts, manifests) — [MIT](LICENSE-MIT).
