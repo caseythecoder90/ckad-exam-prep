@@ -1,0 +1,10 @@
+# Licensing
+
+This repository is dual-licensed.
+
+- **Documentation and notes** — everything under `notes/`, the diagrams, `README.md`, and any other prose — are licensed under the **Creative Commons Attribution 4.0 International License (CC BY 4.0)**. See [`LICENSE-CC-BY-4.0`](LICENSE-CC-BY-4.0).
+- **Code** — everything under `examples/` and `app/`, plus any scripts, Kubernetes manifests, or configuration — is licensed under the **MIT License**. See [`LICENSE-MIT`](LICENSE-MIT).
+
+Where a file could fall under both (for example, a YAML manifest embedded inside a notes page), the code/manifest is available under MIT and the surrounding prose under CC BY 4.0.
+
+Copyright (c) 2026 Casey (@caseythecoder90)
