@@ -195,3 +195,8 @@ exactly what the overlay produced.
   edit the overlay then `kubectl kustomize <dir>` to confirm the field actually
   changed in the rendered output before applying.
 
+## References
+
+- [Declarative Management of Kubernetes Objects Using Kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/) — the canonical overview: generators, cross-cutting fields, bases and overlays
+- [The Kustomization File](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/) — anatomy of `kustomization.yaml` (resources, generators, transformers) and typical base/overlay layout
+

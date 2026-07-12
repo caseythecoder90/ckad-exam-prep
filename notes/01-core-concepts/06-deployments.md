@@ -467,3 +467,9 @@ kubectl scale --replicas=6 deployment/<name>
 # Delete
 kubectl delete deployment <name>
 ```
+
+## References
+
+- [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) — rolling updates, rollbacks, pause/resume, scaling, and revision history
+- [ReplicaSet](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/) — the layer a Deployment creates and orchestrates during rollouts
+- [kubectl Quick Reference](https://kubernetes.io/docs/reference/kubectl/quick-reference/) — `set image`, `rollout`, and `scale` one-liners used in this chapter

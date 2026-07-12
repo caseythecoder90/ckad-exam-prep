@@ -193,3 +193,9 @@ When I run `kubectl exec -it my-pod -- bash` at work, the full chain is:
 5. Traffic streams back through the same path to my terminal
 
 Same chain for `kubectl logs`, except the kubelet is reading the container's stdout/stderr stream from the runtime instead of attaching a TTY.
+
+## References
+
+- [Kubernetes Components](https://kubernetes.io/docs/concepts/overview/components/) — the control-plane and node components (apiserver, etcd, scheduler, controller-manager, kubelet, kube-proxy, runtime)
+- [Cluster Architecture](https://kubernetes.io/docs/concepts/architecture/) — how nodes and the control plane fit together, with the architecture diagram
+- [Command line tool (kubectl)](https://kubernetes.io/docs/reference/kubectl/) — what kubectl is, syntax, and how it talks to the API server

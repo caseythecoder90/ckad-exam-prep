@@ -460,3 +460,9 @@ kubectl set serviceaccount deployment/my-deploy dashboard-sa
 
 `$do` (alias for `--dry-run=client -o yaml`) is the workhorse here for any
 exam question that says "create a Pod that uses ServiceAccount X."
+
+## References
+
+- [Configure Service Accounts for Pods](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/) — `spec.serviceAccountName`, `automountServiceAccountToken`, `kubectl create token`, and creating a long-lived token Secret.
+- [Service Accounts](https://kubernetes.io/docs/concepts/security/service-accounts/) — the SA object model, default SA, and TokenRequest / bound-token authentication.
+- [Managing Service Accounts](https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/) — the token controller, projected volumes, and bound-token claims (audience/time/object).

@@ -295,3 +295,9 @@ behavior — alpha has zero-release support guarantee.
 For exam questions asking "how long must X be supported": GA = 12 months or
 3 releases; Beta = 9 months or 3 releases; Alpha = 0. Always "whichever is
 longer" for GA and Beta.
+
+## References
+
+- [Kubernetes Deprecation Policy](https://kubernetes.io/docs/reference/using-api/deprecation-policy/) — the numbered deprecation rules (version increment, round-trip, replacement stability, support windows)
+- [Deprecated API Migration Guide](https://kubernetes.io/docs/reference/using-api/deprecation-guide/) — which APIs were removed in each release and their replacements
+- [API Overview](https://kubernetes.io/docs/reference/using-api/) — the alpha/beta/GA levels the deprecation windows apply to

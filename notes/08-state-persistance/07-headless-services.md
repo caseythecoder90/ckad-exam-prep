@@ -316,3 +316,9 @@ kubectl exec -it mysql-0 -- cat /etc/resolv.conf
 # search default.svc.cluster.local svc.cluster.local cluster.local
 # nameserver 10.96.0.10  (CoreDNS ClusterIP)
 ```
+
+## References
+
+- [Service](https://kubernetes.io/docs/concepts/services-networking/service/) — the "Headless Services" section covers `clusterIP: None` behavior, with-selectors vs without-selectors DNS
+- [DNS for Services and Pods](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/) — the A-record format for services and pods, including the per-pod `pod-name.service.namespace.svc.cluster.local` records headless services create
+- [StatefulSets](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) — the "Stable Network ID" section showing how `serviceName` wires a StatefulSet to its headless Service for stable per-pod DNS

@@ -242,3 +242,9 @@ worth over-learning the *opposite* of the intuitive guess.
   jammed into one array element, or `command`/`args` swapped). Tie-back to the
   YAML-indentation/command-split failure modes already noted in earlier
   chapters — same family of mistake, just under time pressure.
+
+## References
+
+- [Define a Command and Arguments for a Container](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/) — Pod `command:`/`args:` and how they map to Docker `ENTRYPOINT`/`CMD`.
+- [Images](https://kubernetes.io/docs/concepts/containers/images/) — how the image's default entrypoint/command is resolved when a Pod doesn't override it.
+- [Dockerfile reference: CMD / ENTRYPOINT](https://docs.docker.com/reference/dockerfile/) — canonical exec vs shell form and `ENTRYPOINT` + `CMD` interaction.

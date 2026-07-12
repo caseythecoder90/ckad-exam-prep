@@ -135,3 +135,8 @@ kubectl explain pod.spec.containers.livenessProbe           # recall the field t
 kubectl get pod simple-webapp                                # RESTARTS column climbing = liveness kills
 kubectl describe pod simple-webapp                           # Events: "Liveness probe failed" / "Killing"
 ```
+
+## References
+
+- [Configure Liveness, Readiness and Startup Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) — liveness probe forms (HTTP/TCP/exec) and tuning
+- [Pod Lifecycle](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/) — container probes section: liveness vs readiness action-on-failure

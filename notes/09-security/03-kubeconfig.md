@@ -284,3 +284,8 @@ You can always override with `-n <ns>` or `-A`/`--all-namespaces`.
 - **`set-context --current`** modifies the currently active context, not a new one. This is the fastest way to change your default namespace.
 - **`--kubeconfig` flag** takes a file path; `KUBECONFIG` env var takes a colon-separated list. They behave differently when merging is needed.
 - **Namespaces in contexts are not written into manifests.** A `namespace: finance` in a context only affects kubectl default behavior; it doesn't appear in pod YAML.
+
+## References
+
+- [Organizing Cluster Access Using kubeconfig Files](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) — clusters/users/contexts, current-context, the KUBECONFIG env var, and file merging
+- [Authenticating](https://kubernetes.io/docs/reference/access-authn-authz/authentication/) — the credential types (certs, tokens, exec plugins) that populate a kubeconfig user entry

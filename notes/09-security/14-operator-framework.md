@@ -121,3 +121,9 @@ custom resource type.
 **Gotcha 3 – Installing an operator = installing CRDs + controller**
 If asked to "install the etcd operator," you'd apply the operator manifest
 which creates CRDs, RBAC, and the controller Deployment.
+
+## References
+
+- [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/) — what an operator is, deploying operators, and writing your own
+- [Custom Resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) — the CRD + controller building blocks an operator packages together
+- [OperatorHub.io](https://operatorhub.io/) — community catalog of pre-built operators installable via OLM or manifests

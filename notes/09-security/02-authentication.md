@@ -329,3 +329,9 @@ The combination of OIDC (for users) + cert-manager (for component certs) gives y
 - **ServiceAccount is the only Kubernetes-managed account type.** Everything else is external.
 - **The `system:masters` group is hardcoded admin.** Any cert with `O=system:masters` gets full access regardless of RBAC.
 - **`kubectl config set-context --current --namespace=<ns>`** is the way to change your default namespace without editing the file directly — useful shortcut during the exam.
+
+## References
+
+- [Authenticating](https://kubernetes.io/docs/reference/access-authn-authz/authentication/) — all authentication strategies: X.509 certs, static tokens, OIDC, webhook, exec credential plugins
+- [Service Accounts](https://kubernetes.io/docs/concepts/security/service-accounts/) — the Kubernetes-managed account type for pods, token projection, automounting
+- [Organizing Cluster Access Using kubeconfig Files](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) — kubeconfig structure, contexts, and the exec plugin

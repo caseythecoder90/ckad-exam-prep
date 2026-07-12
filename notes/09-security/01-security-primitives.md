@@ -243,3 +243,10 @@ This lecture is the topology. Here's what each upcoming chapter addresses:
 | Service Accounts (ch04) | Creating SAs, mounting tokens, automounting |
 | TLS (ch05) | Certificate mechanics, CA, cert signing requests |
 | Network Policies (ch06) | Writing policies, ingress/egress rules, deny-all patterns |
+
+## References
+
+- [Authenticating](https://kubernetes.io/docs/reference/access-authn-authz/authentication/) — authentication strategies: X.509 certs, service account tokens, OIDC, webhook
+- [Authorization](https://kubernetes.io/docs/reference/access-authn-authz/authorization/) — the authorization modes (Node, RBAC, ABAC, Webhook) and how requests are evaluated
+- [Using RBAC Authorization](https://kubernetes.io/docs/reference/access-authn-authz/rbac/) — Role, ClusterRole, RoleBinding, ClusterRoleBinding mechanics
+- [Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/) — pod-level ingress/egress rules and CNI enforcement

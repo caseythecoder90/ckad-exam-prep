@@ -199,3 +199,8 @@ kubectl get pods -l '!tier'                           # label-absent
 kubectl get pods --show-labels                        # reveal labels
 kubectl get pods -L app -L function                   # labels as columns
 ```
+
+## References
+
+- [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) — label syntax, equality- vs set-based selectors, reserved prefixes.
+- [Annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/) — non-identifying metadata, how it differs from labels, size limits.

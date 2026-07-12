@@ -277,3 +277,8 @@ Everything above translates directly into Kubernetes fields.
 The capabilities sub-field (`capabilities.add` / `capabilities.drop`) only
 exists at the **container** level, not the Pod level. The exam tests this
 specifically because it's the one place the parallel breaks.
+
+## References
+
+- [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) — the Kubernetes fields these Docker options map to (`runAsUser`, `runAsNonRoot`, `capabilities`, `privileged`).
+- [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/) — how the `restricted`/`baseline` profiles forbid the dangerous Docker-equivalent options (privileged, host namespaces, added capabilities) at admission.

@@ -298,3 +298,9 @@ Use `--all-namespaces` or `-A` to see everything.
 **Gotcha 5 – `helm uninstall` removes everything**
 Unlike `kubectl delete -f`, `helm uninstall` knows every object the
 release created and removes them all. Clean teardown.
+
+## References
+
+- [Installing Helm](https://helm.sh/docs/intro/install/) — official install methods (script, package managers, binaries) and checksum/PGP verification
+- [Using Helm](https://helm.sh/docs/intro/using_helm/) — the install/upgrade/rollback/uninstall lifecycle and repo management commands
+- [Charts](https://helm.sh/docs/topics/charts/) — chart directory structure, `Chart.yaml`, and how templates render Kubernetes manifests

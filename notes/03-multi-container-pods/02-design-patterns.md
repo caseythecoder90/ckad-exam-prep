@@ -162,3 +162,9 @@ kubectl logs <pod> -c db-checker            # logs from a specific init containe
 kubectl logs <pod> -c log-shipper           # logs from the sidecar
 kubectl explain pod.spec.initContainers     # recall the field path under exam pressure
 ```
+
+## References
+
+- [Sidecar Containers](https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/) — native sidecar pattern (init container + `restartPolicy: Always`), start/stop ordering, Job behavior
+- [Init Containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) — sequential run-to-completion init containers and pod status progression
+- [Pods](https://kubernetes.io/docs/concepts/workloads/pods/) — co-located containers and the shared Pod context

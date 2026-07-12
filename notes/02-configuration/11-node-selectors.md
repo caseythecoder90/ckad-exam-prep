@@ -263,3 +263,8 @@ Note the symmetry with taints: remove a label with a trailing `-`
 (`size-`), just like removing a taint (`key=value:effect-`). No
 imperative flag adds a `nodeSelector` to generated YAML — it's always a
 manual edit, so practice the `$do` → edit flow.
+
+## References
+
+- [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/) — `nodeSelector`, node labels, and how affinity extends it (the OR/NOT limitation in §7).
+- [Well-Known Labels, Annotations and Taints](https://kubernetes.io/docs/reference/labels-annotations-taints/) — the built-in node labels (`kubernetes.io/hostname`, `kubernetes.io/arch`, `topology.kubernetes.io/zone`) covered in §6.

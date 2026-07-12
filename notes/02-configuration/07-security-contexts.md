@@ -176,3 +176,8 @@ where `runAsUser` was forgotten or removed in a future edit.
     container-level `runAsUser` on that one container, leaving the others
     untouched.
   - "Refuse to run if the image would run as root" → `runAsNonRoot: true`.
+
+## References
+
+- [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) — Pod- vs container-level `securityContext`, `runAsUser`/`runAsGroup`/`runAsNonRoot`, capabilities, and `privileged`.
+- [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/) — the `baseline`/`restricted` profiles that policy-enforce these fields cluster-wide.

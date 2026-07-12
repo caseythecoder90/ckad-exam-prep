@@ -164,3 +164,9 @@ kustomize edit add resource grafana-depl.yaml
 kubectl kustomize overlays/prod           # render only
 kubectl apply -k overlays/prod            # render + apply
 ```
+
+## References
+
+- [Declarative Management of Kubernetes Objects Using Kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/) — the bases-and-overlays model and per-environment customization
+- [resources](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/resource/) — referencing a base as a directory entry (the modern replacement for `bases:`), including remote/pinned bases
+- [The Kustomization File](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/) — how an overlay's kustomization composes a base with patches and extra resources

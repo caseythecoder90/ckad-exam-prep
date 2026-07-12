@@ -372,3 +372,9 @@ kubectl run test --image=busybox --rm -it --restart=Never -- wget -O- <service-n
 # Delete
 kubectl delete service <name>
 ```
+
+## References
+
+- [Service](https://kubernetes.io/docs/concepts/services-networking/service/) — Service types (ClusterIP, NodePort, LoadBalancer), the port fields, and selectors
+- [Connecting Applications with Services](https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/) — exposing a Deployment with a Service and how endpoints get populated
+- [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) — how a Service's selector matches pod labels to find its endpoints

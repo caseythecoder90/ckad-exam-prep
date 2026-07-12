@@ -179,3 +179,8 @@ docker build --no-cache ...              # force a rebuild ignoring the layer ca
 - **overlay2**, not aufs, on any modern host (the slide is dated).
 - **`-v name` = volume; `-v /abs/path` = bind.** Prefer `--mount` for clarity in real work.
 - Kubernetes nodes don't use Docker anymore (dockershim removed in 1.24) — they run **containerd/CRI-O** — but the same layered/overlayfs + copy-on-write model carries straight over, so this mental model still applies on cluster nodes.
+
+## References
+
+- [Volumes](https://kubernetes.io/docs/concepts/storage/volumes/) — the Kubernetes equivalent of Docker volumes/bind mounts; covers `emptyDir`, `hostPath`, `persistentVolumeClaim`, and the ephemeral-vs-persistent model this Docker chapter motivates
+- [Configure a Pod to Use a Volume for Storage](https://kubernetes.io/docs/tasks/configure-pod-container/configure-volume-storage/) — hands-on task showing the ephemeral-container-layer problem and mounting an `emptyDir` volume to persist across container restarts

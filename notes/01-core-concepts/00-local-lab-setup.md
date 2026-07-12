@@ -565,3 +565,9 @@ Day of:
 - Close everything except PSI Secure Browser before launch
 - No corporate VPN — disable
 - Have water nearby (proctor allows clear bottle)
+
+## References
+
+- [kind – Quick Start](https://kind.sigs.k8s.io/docs/user/quick-start/) — installing kind, creating single- and multi-node clusters from a config file
+- [Install and Set Up kubectl on Linux](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/) — the curl/package-manager install steps and enabling bash autocompletion
+- [kubectl Quick Reference](https://kubernetes.io/docs/reference/kubectl/quick-reference/) — the alias/autocomplete setup and imperative one-liners mirrored in this chapter

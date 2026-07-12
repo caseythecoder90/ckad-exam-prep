@@ -156,3 +156,8 @@ kubectl set image deployment/myapp-primary app-container=myapp-image:2.0
 kubectl rollout status deployment/myapp-primary
 kubectl delete deployment myapp-canary
 ```
+
+## References
+
+- [Canary Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#canary-deployment) — the label + multiple-Deployment approach behind one Service.
+- [Service](https://kubernetes.io/docs/concepts/services-networking/service/) — how a Service load-balances across all matching pods, so the split follows pod count.

@@ -156,3 +156,9 @@ kubectl describe pod <name>                      # Mounts: section shows what's 
 - **`emptyDir`** is ephemeral (dies with the pod) but **shared across containers in the pod** — the go-to for sidecar file sharing.
 - **In-tree cloud volume types are deprecated** → use a **PVC** backed by a CSI **StorageClass** instead of inline `awsElasticBlockStore:` etc.
 - `type: Directory` requires the dir to exist; use `DirectoryOrCreate` to have it created.
+
+## References
+
+- [Volumes](https://kubernetes.io/docs/concepts/storage/volumes/) — the `volumes`/`volumeMounts` model plus every volume type covered here (`emptyDir`, `hostPath`, and the deprecated in-tree cloud plugins)
+- [Configure a Pod to Use a Volume for Storage](https://kubernetes.io/docs/tasks/configure-pod-container/configure-volume-storage/) — step-by-step task defining an `emptyDir` volume and mounting it into a container
+- [Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) — the PV/PVC objects introduced as the fix for the multi-node `hostPath` problem

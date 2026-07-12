@@ -316,3 +316,9 @@ access it directly — rare, mainly for migration).
 If a CRD defines `shortNames: [ft]`, you can use `kubectl get ft` instead
 of `kubectl get flighttickets`. On the exam this saves keystrokes. Check
 `kubectl api-resources` to discover shortNames for any resource.
+
+## References
+
+- [Extend the Kubernetes API with CustomResourceDefinitions](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/) — CRD YAML anatomy, scope, versions, openAPIV3Schema, served/storage
+- [Custom Resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) — the resource + controller model and when to use a CRD vs a ConfigMap
+- [Kubernetes API Concepts](https://kubernetes.io/docs/reference/using-api/api-concepts/) — how custom resources plug into the same API URL and verb structure

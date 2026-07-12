@@ -168,3 +168,8 @@ kubectl patch service my-service -p '{"spec":{"selector":{"version":"v1"}}}'
 # once confident, retire blue
 kubectl delete -f myapp-blue.yml
 ```
+
+## References
+
+- [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) — the built-in strategies; blue/green is assembled from Deployments, not a `strategy.type`.
+- [Service](https://kubernetes.io/docs/concepts/services-networking/service/) — the selector-based routing the cutover flips from v1 to v2.

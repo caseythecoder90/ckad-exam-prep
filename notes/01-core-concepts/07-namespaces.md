@@ -366,3 +366,9 @@ kubectl delete namespace dev
 ```
 
 > **Warning on deleting namespaces:** `kubectl delete namespace dev` deletes the namespace AND every resource inside it — pods, deployments, services, configmaps, secrets, everything. It's recursive and irreversible. Triple-check before running this anywhere that matters.
+
+## References
+
+- [Namespaces](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/) — the four initial namespaces, when to use namespaces, and setting the default in your context
+- [DNS for Services and Pods](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/) — the `<svc>.<ns>.svc.cluster.local` FQDN format and namespace-aware resolution
+- [Resource Quotas](https://kubernetes.io/docs/concepts/policy/resource-quotas/) — capping aggregate resource use per namespace with ResourceQuota

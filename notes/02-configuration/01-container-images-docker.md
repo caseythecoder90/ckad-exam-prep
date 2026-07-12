@@ -247,3 +247,8 @@ docker push youruser/myapp:1
 > the above runs as-is on the ThinkPad. `docker history` against any image you
 > build is the fastest way to *see* the layer/cache behaviour rather than just
 > read about it — recommend doing that once before moving on.
+
+## References
+
+- [Images](https://kubernetes.io/docs/concepts/containers/images/) — image names/tags/digests, `imagePullPolicy` (`IfNotPresent`/`Always`/`Never`), `:latest` caveats, and ImagePullBackOff.
+- [Dockerfile reference](https://docs.docker.com/reference/dockerfile/) — canonical `FROM`/`RUN`/`COPY`/`ENTRYPOINT`/`CMD` instruction semantics and layer behaviour.

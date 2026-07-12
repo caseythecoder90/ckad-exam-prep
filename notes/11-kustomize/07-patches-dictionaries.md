@@ -226,3 +226,8 @@ kubectl kustomize overlays/dev          # or:  kustomize build overlays/dev
 Always `kubectl kustomize <dir>` to **confirm the field actually changed** in the rendered
 output before `kubectl apply -k`. On the exam this catches a wrong path or a forgotten
 `~1` immediately.
+
+## References
+
+- [patches](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/patches/) — strategic merge vs JSON6902 patch forms and how they target and merge fields
+- [Declarative Management of Kubernetes Objects Using Kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/) — customizing existing resource fields via patches

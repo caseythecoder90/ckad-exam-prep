@@ -123,3 +123,9 @@ docker system df                            # space used by images / containers 
 - **Storage driver = per daemon, ephemeral, union/COW.** **Volume driver = per volume, persistent, a backing-store mount.** Don't conflate them — this is the distinction the exam *does* lean on conceptually when you reason about why pod data needs a PV.
 - **overlay2** is the default on any modern host; you rarely set the storage driver.
 - The Kubernetes equivalent of a **bind mount** is `hostPath`; of a Docker **volume**, an `emptyDir` (ephemeral) or a **PV** (persistent). Keep that map handy for the next chapters.
+
+## References
+
+- [Volumes](https://kubernetes.io/docs/concepts/storage/volumes/) — the volume types Kubernetes exposes, including the `csi` type that is the standardized descendant of Docker volume-driver plugins
+- [Compute, Storage, and Networking Extensions](https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/) — how Kubernetes pluggable storage works (CSI and the deprecated FlexVolume), the direct successor to Docker's volume-driver plugin model
+- [Storage Classes](https://kubernetes.io/docs/concepts/storage/storage-classes/) — the `provisioner` field where a CSI driver plugs in for dynamic provisioning

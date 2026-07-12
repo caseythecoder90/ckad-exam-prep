@@ -373,3 +373,9 @@ Secrets"** have copy-paste YAML for all three shapes.
     Mixing them up gives a `secret data illegal base64 data` error.
   - Forgot `-n` on `echo` → trailing newline encoded into your secret →
     mysterious auth failures.
+
+## References
+
+- [Managing Secrets using kubectl](https://kubernetes.io/docs/tasks/configmap-secret/managing-secret-using-kubectl/) — `create secret generic`, `--from-literal`/`--from-file`, and decoding with `-o jsonpath` + `base64 --decode`.
+- [Distribute Credentials Securely Using Secrets](https://kubernetes.io/docs/tasks/inject-data-application/distribute-credentials-secure/) — copy-paste YAML for the three consumption methods (`envFrom`, `secretKeyRef`, volume mount).
+- [Secrets](https://kubernetes.io/docs/concepts/configuration/secret/) — built-in Secret types, base64-not-encryption caveat, and encryption-at-rest / RBAC guidance.

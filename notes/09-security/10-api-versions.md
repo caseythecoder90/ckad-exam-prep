@@ -291,3 +291,9 @@ the stored version.
 After editing `/etc/kubernetes/manifests/kube-apiserver.yaml`, the apiserver
 takes 30–60 seconds to restart. Trying to `kubectl` immediately after saving
 will return connection errors. Wait and verify before continuing.
+
+## References
+
+- [API Overview](https://kubernetes.io/docs/reference/using-api/) — the alpha/beta/GA maturity levels and their stability guarantees
+- [Kubernetes Deprecation Policy](https://kubernetes.io/docs/reference/using-api/deprecation-policy/) — the support-window rules that govern how long each version level is served
+- [Kubernetes API Concepts](https://kubernetes.io/docs/reference/using-api/api-concepts/) — resource versions and how the apiserver serves multiple versions of a resource

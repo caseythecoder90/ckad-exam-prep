@@ -308,3 +308,8 @@ kubectl get pod myapp -o wide        # shows which NODE it landed on
 Because the structure is fiddly and there's no generator, the single
 biggest time-saver is the docs page — pull the `requiredDuring...`
 example and edit it rather than typing the nesting from scratch.
+
+## References
+
+- [Assign Pods to Nodes using Node Affinity](https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes-using-node-affinity/) — copy-paste `required`/`preferred` affinity YAML to edit under time pressure.
+- [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/) — the affinity operators (`In`/`NotIn`/`Exists`/`Gt`/`Lt`), term/expression AND-vs-OR semantics, and `IgnoredDuringExecution` meaning.

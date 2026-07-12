@@ -456,3 +456,8 @@ be present on every webhook. Missing them causes the
 admissionReviewVersions: ["v1"]
 sideEffects: None
 ```
+
+## References
+
+- [Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/) — writing/deploying webhook servers, AdmissionReview request/response, WebhookConfiguration fields, failurePolicy
+- [Admission Control in Kubernetes](https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/) — where MutatingAdmissionWebhook and ValidatingAdmissionWebhook sit in the admission phases

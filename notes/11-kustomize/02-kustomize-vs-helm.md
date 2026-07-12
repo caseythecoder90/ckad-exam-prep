@@ -184,3 +184,9 @@ three distinct techniques, and your work setup uses more than one:
 These layer. You can have a Kustomize base+overlay whose values are filled in by
 a pipeline's variable injection.
 
+## References
+
+- [Declarative Management of Kubernetes Objects Using Kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/) — the merge/patch model Kustomize uses, contrasted here with Helm's substitute model
+- [Charts](https://helm.sh/docs/topics/charts/) — Helm's chart structure and Go-template manifests (the substitute side of the comparison)
+- [Using Helm](https://helm.sh/docs/intro/using_helm/) — Helm's package-manager features: repos, install/upgrade/rollback that Kustomize lacks
+

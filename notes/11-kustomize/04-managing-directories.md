@@ -153,3 +153,9 @@ kustomize edit add resource cache/      # add a dir/file to resources: in place
 When a nested build misbehaves, `kubectl kustomize k8s/` (render-only) is the
 fastest way to see the fully-merged output and spot the missing/duplicated
 resource before you ever apply.
+
+## References
+
+- [resources](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/resource/) — `resources:` entries may be files, kustomization directories, or remote URLs (the nesting rule)
+- [The Kustomization File](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/) — how nested kustomizations compose and how transformers cascade
+- [kustomize build](https://kubectl.docs.kubernetes.io/references/kustomize/cmd/build/) — recursive (depth-first) build across referenced directories

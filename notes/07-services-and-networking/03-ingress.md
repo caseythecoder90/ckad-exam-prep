@@ -260,3 +260,8 @@ Reading the `--rule` syntax: `host/path=service:port`. Omit the host (`/path=svc
 - **Service types:** ClusterIP (internal), NodePort (`30000–32767` on every node), LoadBalancer (needs a cloud/CCM or MetalLB; else `<pending>`).
 - **`kubectl create ingress --rule=...` exists** (NetworkPolicy has no generator; Ingress does) — and it fills in `pathType`.
 - **Ingress (resource) ≠ ingress (NetworkPolicy direction).** Same word, unrelated mechanisms.
+
+## References
+
+- [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) — the `networking.k8s.io/v1` resource: rules, `pathType`, `defaultBackend`, `ingressClassName`, TLS.
+- [Service](https://kubernetes.io/docs/concepts/services-networking/service/) — the ClusterIP/NodePort/LoadBalancer types Ingress routes to and builds on.

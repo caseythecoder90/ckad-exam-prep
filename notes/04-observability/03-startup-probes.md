@@ -143,3 +143,8 @@ kubectl explain pod.spec.containers.startupProbe        # recall the field tree
 kubectl describe pod app                                 # Events: "Startup probe failed" / "Killing"
 kubectl get pod app                                      # RESTARTS climbing = startup grace too short
 ```
+
+## References
+
+- [Configure Liveness, Readiness and Startup Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) — "Protect slow starting containers with startup probes" and probe fields
+- [Pod Lifecycle](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/) — container probes: how the startup probe gates liveness and readiness

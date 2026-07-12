@@ -221,3 +221,8 @@ Exam flow: `--show-labels` first → write the policy translating English to ∩
 - **Egress + DNS:** locking egress breaks name resolution unless you allow `:53` to CoreDNS.
 - **Ports are destination ports** on the target (ingress: your selected pods; egress: the thing you connect to).
 - **Policy evaluates the immediate source/last hop**, not the original caller — the reason laptop→ingress→pod is allowed while laptop→(direct pod-to-pod) would be denied.
+
+## References
+
+- [Behavior of to and from selectors](https://kubernetes.io/docs/concepts/services-networking/network-policies/#behavior-of-to-and-from-selectors) — how `podSelector`, `namespaceSelector`, and `ipBlock` combine (AND within an item, OR across items).
+- [Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/) — full resource reference including egress, `policyTypes`, and default-deny behavior.

@@ -382,3 +382,10 @@ full `values.yaml` so you know what you can override.
 `helm install release-4 ./wordpress` installs from a local chart directory
 (after `helm pull --untar`). The path starts with `./` — without it, Helm
 looks for a repo chart.
+
+## References
+
+- [Charts](https://helm.sh/docs/topics/charts/) — chart structure, `Chart.yaml` fields (chart vs app version), and `templates/`
+- [Values Files](https://helm.sh/docs/chart_template_guide/values_files/) — the `.Values` object and the precedence order (`values.yaml` → `-f` → `--set`)
+- [Using Helm](https://helm.sh/docs/intro/using_helm/) — `helm search`, repo management, and the release lifecycle commands
+- [helm — CLI reference](https://helm.sh/docs/helm/helm/) — top-level command index and global flags

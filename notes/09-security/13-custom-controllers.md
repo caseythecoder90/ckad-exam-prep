@@ -252,3 +252,8 @@ for the custom resource type.
 **Gotcha 3 – Operator = CRD + Controller**
 If the exam mentions "operators" — it's the combination of a CRD and a
 custom controller packaged together. Know the vocabulary.
+
+## References
+
+- [Custom Resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) — how custom controllers pair with custom resources to form declarative APIs
+- [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/) — the control-loop model, deploying controllers, and frameworks (Kubebuilder, Operator SDK, kopf)

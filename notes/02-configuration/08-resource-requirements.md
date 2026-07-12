@@ -415,3 +415,9 @@ namespace's footprint.
     likely the same.
   - "Limit namespace Y to 10 CPUs total" → `kind: ResourceQuota`,
     `hard.limits.cpu: "10"`.
+
+## References
+
+- [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) — requests vs limits, CPU/memory units, scheduling-by-requests, and OOMKilled behaviour.
+- [Assign Memory Resources to Containers and Pods](https://kubernetes.io/docs/tasks/configure-pod-container/assign-memory-resource/) — hands-on memory requests/limits and the OOM-kill demonstration.
+- [Configure Default Memory Requests and Limits for a Namespace](https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/memory-default-namespace/) — LimitRange defaults applied at namespace admission.

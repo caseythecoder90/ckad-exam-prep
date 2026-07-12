@@ -264,3 +264,9 @@ kubectl explain pod.spec.containers
 kubectl auth can-i list pods --as=system:anonymous
 kubectl auth can-i create deployments -n default
 ```
+
+## References
+
+- [API Overview](https://kubernetes.io/docs/reference/using-api/) — the core (`/api/v1`) vs named (`/apis/$GROUP/$VERSION`) groups and how they map to `apiVersion`
+- [Kubernetes API Concepts](https://kubernetes.io/docs/reference/using-api/api-concepts/) — resource URI structure, verbs, and how kubectl commands translate to HTTP requests
+- [Using RBAC Authorization](https://kubernetes.io/docs/reference/access-authn-authz/rbac/) — how the `apiGroups` field is used in Role/ClusterRole rules
