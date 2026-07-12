@@ -353,3 +353,8 @@ kubectl run myapp --image=nginx $do > pod.yaml
 No imperative shortcut for adding a toleration to a Pod manifest — it's
 always a YAML edit. On the exam, generate with `$do` then add the four
 lines of toleration under `spec:`.
+
+## References
+
+- [Taints and Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) — `kubectl taint` syntax, the three effects (`NoSchedule`/`PreferNoSchedule`/`NoExecute`), `tolerationSeconds`, and dedicated-node use cases.
+- [Well-Known Labels, Annotations and Taints](https://kubernetes.io/docs/reference/labels-annotations-taints/) — the built-in `node-role.kubernetes.io/control-plane` and `node.kubernetes.io/*` taints referenced in §5.

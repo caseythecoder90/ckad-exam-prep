@@ -192,3 +192,9 @@ kubectl delete pvc myclaim           # may hang (Terminating) if a pod still use
 - **`Retain`** leaves the PV `Released` and **not reusable** until an admin intervenes. **`Recycle`** is deprecated.
 - **Capacity isn't always enforced** as a hard quota by the backend (e.g. `hostPath` won't stop you exceeding 1Gi) — it's primarily a *matching* attribute. (Beyond lecture; true enforcement depends on the storage type.)
 - Deleting a PVC **in use by a pod** blocks until the pod releases it (finalizer).
+
+## References
+
+- [Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) — the full PV/PVC lifecycle: provisioning, binding, access modes, reclaim policies, and storage-object-in-use protection
+- [Configure a Pod to Use a PersistentVolume for Storage](https://kubernetes.io/docs/tutorials/configuration/configure-persistent-volume-storage/) — end-to-end tutorial creating a PV, a PVC, and a pod that consumes the claim via `persistentVolumeClaim.claimName`
+- [Volumes](https://kubernetes.io/docs/concepts/storage/volumes/) — the `persistentVolumeClaim` volume type used to mount a bound PVC into a pod

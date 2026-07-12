@@ -205,3 +205,9 @@ kind: Kustomization
 It's optional for plain `kustomize build` — kustomize infers it — but it makes the
 file self-describing, satisfies schema validators/linters, and is what `kustomize
 create` writes for you. Cheap to include; include it.
+
+## References
+
+- [Kustomize — Install Kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/) — official install methods for the standalone CLI
+- [The Kustomization File](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/) — the fields that go in `kustomization.yaml` (resources, transformers, generators)
+- [kustomize build](https://kubectl.docs.kubernetes.io/references/kustomize/cmd/build/) — how `build` hydrates a kustomization into rendered manifests on stdout

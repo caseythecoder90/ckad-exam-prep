@@ -189,3 +189,8 @@ kubectl kustomize overlays/dev        # or: kustomize build overlays/dev
 ```
 
 You hand-write the patch body; what's scriptable is registering it and verifying the render.
+
+## References
+
+- [patches](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/patches/) — the unified `patches:` field: strategic merge vs JSON6902, inline vs file, and `target:` selectors
+- [Declarative Management of Kubernetes Objects Using Kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/) — patches in the context of composing and customizing resources

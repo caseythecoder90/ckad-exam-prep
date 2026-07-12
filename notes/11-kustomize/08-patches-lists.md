@@ -199,3 +199,8 @@ kustomize edit add patch \
 # ALWAYS confirm list order + the applied change before applying:
 kubectl kustomize overlays/dev | less        # check containers[] order and contents
 ```
+
+## References
+
+- [patches](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/patches/) — strategic merge vs JSON6902 patches, including list handling and targeting
+- [Declarative Management of Kubernetes Objects Using Kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/) — patching resources (positional JSON6902 vs keyed strategic-merge merges)

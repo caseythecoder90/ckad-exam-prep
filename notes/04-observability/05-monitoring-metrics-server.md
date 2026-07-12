@@ -107,3 +107,9 @@ kubectl top pod -l app=myapp                            # filter by label
 kubectl top pod -n <namespace>                          # specific namespace
 kubectl get apiservice v1beta1.metrics.k8s.io           # verify Metrics Server is registered/available
 ```
+
+## References
+
+- [Resource metrics pipeline](https://kubernetes.io/docs/tasks/debug/debug-cluster/resource-metrics-pipeline/) — cAdvisor -> kubelet -> metrics-server -> Metrics API flow behind `kubectl top`
+- [Tools for Monitoring Resources](https://kubernetes.io/docs/tasks/debug/debug-cluster/resource-usage-monitoring/) — resource metrics pipeline vs full (Prometheus) pipeline
+- [kubernetes-sigs/metrics-server](https://github.com/kubernetes-sigs/metrics-server) — upstream repo and `components.yaml` install (`--kubelet-insecure-tls` for local clusters)

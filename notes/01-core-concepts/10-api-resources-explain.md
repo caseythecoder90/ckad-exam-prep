@@ -369,3 +369,9 @@ kubectl explain services.spec                  # what goes in a Service spec
 kubectl explain configmaps                     # ConfigMap structure
 kubectl explain secrets                        # Secret structure
 ```
+
+## References
+
+- [kubectl explain](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_explain/) — command reference for `explain`, including `--recursive` and `--api-version`
+- [kubectl api-resources](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_api-resources/) — command reference for listing resource types, shortnames, and API versions
+- [Kubernetes API Concepts](https://kubernetes.io/docs/reference/using-api/api-concepts/) — resource types, kinds, API groups, and the namespaced vs cluster-scoped distinction

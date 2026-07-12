@@ -244,3 +244,9 @@ has no registry access. It's a defense-in-depth control.
 `ImagePolicyWebhook` is a built-in controller with its own configuration file
 (separate from `MutatingAdmissionWebhook`). Don't conflate them on the exam.
 Next chapter covers `MutatingAdmissionWebhook` and `ValidatingAdmissionWebhook`.
+
+## References
+
+- [Admission Control in Kubernetes](https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/) — the full list of built-in controllers, phases, and the enable/disable flags
+- [Authorization](https://kubernetes.io/docs/reference/access-authn-authz/authorization/) — the AuthN → AuthZ → Admission pipeline that precedes admission control
+- [Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/) — the webhook-based extension points covered in the next chapter

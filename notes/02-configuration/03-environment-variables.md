@@ -148,3 +148,9 @@ the other, never both.
   This is the same `exec` workflow from the DNS chapter — useful when an env var
   "isn't taking" (often a ConfigMap/Secret key name mismatch, which surfaces
   here in later chapters).
+
+## References
+
+- [Define Environment Variables for a Container](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) — the `env:` list, literal values, and `$(VAR)` substitution.
+- [Configure a Pod to Use a ConfigMap](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/) — the `valueFrom.configMapKeyRef` source shape referenced in §3.2.
+- [Distribute Credentials Securely Using Secrets](https://kubernetes.io/docs/tasks/inject-data-application/distribute-credentials-secure/) — the `valueFrom.secretKeyRef` source shape referenced in §3.3.

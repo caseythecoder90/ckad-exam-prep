@@ -282,3 +282,9 @@ kubectl run test --image=busybox --rm -it --restart=Never -- wget -O- <service-n
 # Delete
 kubectl delete service <name>
 ```
+
+## References
+
+- [Service](https://kubernetes.io/docs/concepts/services-networking/service/) — ClusterIP as the default type, cluster IPs, and how NodePort builds on ClusterIP
+- [DNS for Services and Pods](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/) — the DNS records that let pods reach a ClusterIP service by name
+- [Connecting Applications with Services](https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/) — service discovery via DNS for pod-to-pod communication

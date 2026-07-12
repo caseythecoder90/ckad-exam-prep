@@ -130,3 +130,9 @@ When debugging on a Kubernetes node, your muscle memory will say `docker ps`, bu
 A few `docker` flags don't have crictl equivalents (`--detach-keys`, `--sig-proxy`, `--privileged` on exec, the `--details` flag on logs). For everyday debugging during the exam, the basic forms above are what you'll reach for.
 
 > **In practice:** for almost everything CKAD-related you should use `kubectl logs` and `kubectl exec`, not `crictl`. You only fall back to `crictl` when something is wrong *below* the kubelet — for example, the kubelet can't start a pod because the runtime is unhealthy. That's a "find the node, ssh in, run crictl" situation.
+
+## References
+
+- [Container Runtime Interface (CRI)](https://kubernetes.io/docs/concepts/architecture/cri/) — the gRPC plug-in interface between the kubelet and any CRI-compliant runtime
+- [Container Runtimes](https://kubernetes.io/docs/setup/production-environment/container-runtimes/) — containerd and CRI-O setup, cgroup drivers, and the dockershim removal note
+- [Kubernetes Components](https://kubernetes.io/docs/concepts/overview/components/) — where the container runtime sits among the node components

@@ -288,6 +288,12 @@ kubectl rollout pause deployment/myapp
 kubectl rollout resume deployment/myapp
 ```
 
+## References
+
+- [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) — updating a Deployment, rolling back, and revision history via ReplicaSets.
+- [Deployment strategy](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy) — Recreate vs RollingUpdate, `maxUnavailable`/`maxSurge`.
+- [kubectl rollout](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/) — `status`, `history`, `undo`, `pause`, `resume` subcommand reference.
+
 ## 10. Exam-pattern gotchas
 
 - **Deployment -> ReplicaSet -> Pod.** A Deployment never edits a ReplicaSet's template; it makes a **new** ReplicaSet per revision and keeps the old at 0. That retained ReplicaSet is what makes rollback instant.

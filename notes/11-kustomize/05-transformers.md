@@ -165,3 +165,10 @@ kubectl kustomize .            # render and verify the transforms landed
 ```
 
 Always render (`kubectl kustomize <dir>`) and eyeball the output before applying.
+
+## References
+
+- [The Kustomization File](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/) — the full field list including `namespace`, `namePrefix`/`nameSuffix`, and the label/annotation transformers
+- [images](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/images/) — the image transformer: `name`, `newName`, `newTag`, `digest`
+- [labels](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/labels/) — list-form `labels:` with `includeSelectors`/`includeTemplates` (the safer successor to `commonLabels`)
+- [namespace](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/namespace/) — how `namespace:` stamps/overrides `metadata.namespace` across resources

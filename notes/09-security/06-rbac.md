@@ -339,3 +339,8 @@ kubectl create role developer --verb=get,list --resource=pods \
 - **ServiceAccount subjects need `namespace:`** — when binding a ServiceAccount in a different namespace, the `namespace` field on the subject is required.
 - **`kubectl auth can-i` uses your current kubeconfig user** — if you switch context or `--as`, it uses that identity instead.
 - **Verify after creating** — always follow `kubectl create role` + `kubectl create rolebinding` with `kubectl auth can-i <verb> <resource> --as <user>`.
+
+## References
+
+- [Using RBAC Authorization](https://kubernetes.io/docs/reference/access-authn-authz/rbac/) — Role/RoleBinding YAML, subjects, roleRef, resourceNames, and built-in roles
+- [Authorization](https://kubernetes.io/docs/reference/access-authn-authz/authorization/) — where RBAC sits among the authorization modes and how requests are checked

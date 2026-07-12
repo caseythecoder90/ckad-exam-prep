@@ -296,3 +296,8 @@ kubectl exec -it <client-pod> -- nc -zv <db-svc> 3306     # or curl/wget
 ```
 
 Exam workflow: `--show-labels` on the source and target pods (and namespaces) **before** writing the policy, so your `matchLabels` are exact. Then `apply`, then `exec`+`nc`/`curl` to confirm allowed traffic passes and disallowed traffic hangs/fails.
+
+## References
+
+- [Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/) — the resource, `podSelector`/`policyTypes`, default-deny on selection, and the copyable YAML skeleton.
+- [Behavior of to and from selectors](https://kubernetes.io/docs/concepts/services-networking/network-policies/#behavior-of-to-and-from-selectors) — the `podSelector`/`namespaceSelector`/`ipBlock` peer types and AND-vs-OR semantics.

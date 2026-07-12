@@ -337,3 +337,9 @@ kubectl apply -f pvc.yaml --dry-run=client
 - **Exam clusters have a default SC.** A PVC without `storageClassName` will use it. Always check `kubectl get sc` to understand what's in the cluster.
 - **`""` vs absent field.** `storageClassName: ""` is an explicit opt-out. Omitting the field entirely is not. They behave differently.
 - **Reclaim policy is the SC's, not the PV's option.** The PV inherits it at creation time; changing the SC after the fact doesn't affect existing PVs.
+
+## References
+
+- [Storage Classes](https://kubernetes.io/docs/concepts/storage/storage-classes/) — the StorageClass object: `provisioner`, `parameters`, `reclaimPolicy`, `volumeBindingMode`, default-class annotation, and per-backend examples
+- [Dynamic Volume Provisioning](https://kubernetes.io/docs/concepts/storage/dynamic-provisioning/) — how a PVC's `storageClassName` triggers automatic PV creation, defaulting behavior, and topology-aware provisioning
+- [Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) — reclaim policy and the static-vs-dynamic provisioning distinction this chapter builds on

@@ -122,3 +122,9 @@ kubectl logs myapp-pod -c init-myservice       # logs from a specific init conta
 kubectl describe pod myapp-pod                 # "Init Containers" section: state + exit code + restarts
 kubectl explain pod.spec.initContainers        # recall the field path under exam pressure
 ```
+
+## References
+
+- [Init Containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) — full behavior: sequential ordering, run-to-completion, failure/restart, resource accounting
+- [Sidecar Containers](https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/) — when a long-running helper needs `restartPolicy: Always` instead of a plain init container
+- [Pod Lifecycle](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/) — how init containers fit the pod lifecycle and `Initialized` condition

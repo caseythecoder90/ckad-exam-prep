@@ -377,3 +377,9 @@ kubectl delete pvc -l app=mysql
 - **OrderedReady + failing readiness probe = stuck StatefulSet.** If `mysql-1`'s readiness probe fails, `mysql-2` will never be created. The controller waits indefinitely. Debug with `kubectl describe pod mysql-1` and check probe failure events.
 - **`kubectl rollout restart sts` updates in reverse ordinal.** The highest-numbered pod restarts first, working down to 0. Same order as updates.
 - **StatefulSet pods aren't deleted during node failures by default.** The pod on a failed node shows as `Terminating` indefinitely (Kubernetes waits for the node to come back). For databases where another copy of the data is safe, you can force-delete: `kubectl delete pod mysql-1 --force --grace-period=0`.
+
+## References
+
+- [StatefulSets](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) — the authoritative reference: stable identity, ordered deployment/scaling, `serviceName`, `podManagementPolicy`, update strategies with `partition`, and `volumeClaimTemplates`
+- [StatefulSet Basics](https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/) — hands-on tutorial demonstrating ordinal naming, ordered creation/termination, stable network identity, and RollingUpdate/OnDelete
+- [Dynamic Volume Provisioning](https://kubernetes.io/docs/concepts/storage/dynamic-provisioning/) — how each pod's `volumeClaimTemplates` PVC gets a per-pod PV via a StorageClass

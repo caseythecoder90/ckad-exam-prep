@@ -720,3 +720,9 @@ k create namespace dev $do > ns.yaml
 k edit pod <name>
 k edit deployment <name>
 ```
+
+## References
+
+- [Pods](https://kubernetes.io/docs/concepts/workloads/pods/) — the Pod object, its four top-level fields, and the pod template
+- [Configure Pods and Containers](https://kubernetes.io/docs/tasks/configure-pod-container/) — task index covering env, volumes, probes, resources, and securityContext used in the walkthrough
+- [kubectl Quick Reference](https://kubernetes.io/docs/reference/kubectl/quick-reference/) — the `--dry-run=client -o yaml` generation and apply/create patterns

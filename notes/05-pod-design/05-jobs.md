@@ -145,3 +145,8 @@ kubectl describe job math-add-job                 # completions, parallelism, ev
 kubectl delete job math-add-job                   # removes the job and its pods
 kubectl explain job.spec                          # recall completions/parallelism/backoffLimit
 ```
+
+## References
+
+- [Jobs](https://kubernetes.io/docs/concepts/workloads/controllers/job/) — run-to-completion pods, `completions`/`parallelism`, `backoffLimit`, and `ttlSecondsAfterFinished`.
+- [Pod restart policy](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy) — `Always`/`OnFailure`/`Never` semantics that gate Job pod retries.

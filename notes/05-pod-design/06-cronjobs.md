@@ -214,3 +214,8 @@ kubectl create job --from=cronjob/reporting-cron-job manual-run-001
 ```
 
 **Imperative limitation:** `kubectl create cronjob` produces a **single-container** pod and gives you **no flag for `completions` or `parallelism`**. If the question asks for those, scaffold with `$do`, then hand-edit `spec.jobTemplate.spec` to add `completions:`/`parallelism:`, validate with `--dry-run=client`, then apply.
+
+## References
+
+- [CronJob](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/) — schedule syntax, `jobTemplate`, `concurrencyPolicy`, `suspend`, `timeZone`, history limits.
+- [Jobs](https://kubernetes.io/docs/concepts/workloads/controllers/job/) — the Job spec that `jobTemplate` inlines (`completions`/`parallelism`/`backoffLimit`).

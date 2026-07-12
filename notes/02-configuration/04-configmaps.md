@@ -257,3 +257,8 @@ Decision shortcut: everything as env → `envFrom`; one value (or rename) →
   ```
   Most "value didn't show up" failures are a `key:` name mismatch or a
   missing `volumeMounts` half — check both first.
+
+## References
+
+- [Configure a Pod to Use a ConfigMap](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/) — copy-paste YAML for all three consumption methods (`envFrom`, `configMapKeyRef`, volume mount).
+- [ConfigMaps](https://kubernetes.io/docs/concepts/configuration/configmap/) — the ConfigMap object (`data`/`binaryData`), the 1 MiB limit, immutability, and mounted-file auto-update behaviour.

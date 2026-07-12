@@ -106,3 +106,9 @@ kubectl logs <pod> --all-containers=true       # logs from every container at on
 kubectl exec -it <pod> -c <container> -- sh     # shell into a SPECIFIC container
 kubectl describe pod <pod>                     # per-container state, restart counts, events
 ```
+
+## References
+
+- [Pods](https://kubernetes.io/docs/concepts/workloads/pods/) — Pod concept, including multi-container pods and the shared network/storage context
+- [Sidecar Containers](https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/) — native sidecars as init containers with `restartPolicy: Always`
+- [Init Containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) — run-to-completion setup containers referenced for run-once helper work

@@ -251,3 +251,8 @@ a ClusterRole or Role resource?" on the exam without memorizing the full list.
 - Built-in ClusterRoles (`cluster-admin`, `admin`, `edit`, `view`) exist;
   `cluster-admin` is the highest-privilege ClusterRole and should be bound
   with extreme care.
+
+## References
+
+- [Using RBAC Authorization](https://kubernetes.io/docs/reference/access-authn-authz/rbac/) — ClusterRole/ClusterRoleBinding, the ClusterRole+RoleBinding pattern, aggregation, and default roles
+- [Authorization](https://kubernetes.io/docs/reference/access-authn-authz/authorization/) — request attributes including resource scope (cluster-scoped vs namespaced)

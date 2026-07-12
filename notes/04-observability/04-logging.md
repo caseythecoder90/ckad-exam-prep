@@ -93,3 +93,8 @@ kubectl logs <pod> -c <container> --previous    # previous crashed instance
 kubectl logs <pod> --tail=50 --timestamps       # last 50 lines, timestamped
 kubectl logs -f deploy/<name>                    # via a Deployment (skips the hash)
 ```
+
+## References
+
+- [Logging Architecture](https://kubernetes.io/docs/concepts/cluster-administration/logging/) — stdout/stderr capture, log rotation, and the logging-sidecar architecture
+- [Debug Running Pods](https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/) — examining pod logs and debugging crashed containers

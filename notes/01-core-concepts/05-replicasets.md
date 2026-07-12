@@ -319,3 +319,9 @@ kubectl edit replicaset <name>
 kubectl delete replicaset <name>                # cascade: deletes pods too
 kubectl delete -f rs.yaml
 ```
+
+## References
+
+- [ReplicaSet](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/) — how a ReplicaSet maintains N pods, selectors, templates, and why Deployments are preferred
+- [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) — the matchLabels mechanism that ties a ReplicaSet to its pods
+- [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) — the object that manages ReplicaSets for you (next chapter)

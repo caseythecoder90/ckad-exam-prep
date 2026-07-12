@@ -150,3 +150,8 @@ kubectl explain pod.spec.containers.readinessProbe.httpGet
 kubectl get pod simple-webapp                                # READY column: 0/1 vs 1/1
 kubectl describe pod simple-webapp                           # Conditions + probe failure events
 ```
+
+## References
+
+- [Configure Liveness, Readiness and Startup Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) — probe handlers, YAML, and timing fields
+- [Pod Lifecycle](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/) — container probes and pod conditions (`Ready`, `ContainersReady`)

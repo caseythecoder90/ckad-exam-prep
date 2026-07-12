@@ -463,3 +463,9 @@ kubectl delete pod -l app=web                                 # by label selecto
 kubectl delete pods --all                                     # all pods in current ns
 kubectl delete pod <name> --force --grace-period=0            # force (or use $now)
 ```
+
+## References
+
+- [Pods](https://kubernetes.io/docs/concepts/workloads/pods/) — what a Pod is, single- vs multi-container, shared network and storage
+- [Pod Lifecycle](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/) — phases, container states (Pending/Running/CrashLoopBackOff), and graceful termination
+- [Configure Pods and Containers](https://kubernetes.io/docs/tasks/configure-pod-container/) — task index for adding env, volumes, probes, and more to a pod

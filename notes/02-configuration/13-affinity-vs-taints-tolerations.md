@@ -245,3 +245,8 @@ affinity (to attract it). Exactly the pattern from §5, already set up by
 - **Order:** node setup (label + taint) before pod deployment.
 - **`effect` must match** between taint and toleration; `values`/`value`
   must match between label and affinity/toleration.
+
+## References
+
+- [Taints and Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) — the repel (node-side) half of the dedicated-node pattern, including the control-plane taint.
+- [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/) — the attract (pod-side) half via node affinity, combined with taints for a fully dedicated node.

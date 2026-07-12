@@ -222,3 +222,9 @@ spec:
 ```
 
 > Note: very old clusters (pre-1.6) defaulted to `AlwaysAllow`. Modern kubeadm clusters default to `Node,RBAC`. Check your specific cluster; don't assume.
+
+## References
+
+- [Authorization](https://kubernetes.io/docs/reference/access-authn-authz/authorization/) — the authorization modes, request attributes, and chain evaluation
+- [Using RBAC Authorization](https://kubernetes.io/docs/reference/access-authn-authz/rbac/) — the standard mode for user/service authorization
+- [Using Node Authorization](https://kubernetes.io/docs/reference/access-authn-authz/node/) — the special-purpose authorizer for kubelets and the `system:nodes` group

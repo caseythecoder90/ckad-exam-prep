@@ -197,3 +197,8 @@ kustomize edit add component ../../components/db
 # preview an overlay WITH its components resolved
 kubectl kustomize overlays/premium      # confirm the component's resources/patches landed
 ```
+
+## References
+
+- [Kustomize Components](https://kubectl.docs.kubernetes.io/guides/config_management/components/) — the canonical components guide: `kind: Component`, opt-in via `components:`, and optional-feature composition
+- [The Kustomization File](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/) — where `components:` fits among the kustomization fields and how it composes with resources/patches
