@@ -14,7 +14,7 @@ in the body with a relative path:
 ![Short caption](./diagrams/14-something.png)
 ```
 
-Always `./diagrams/...` — never `../diagrams/...`, never `src/main/...`.
+Always `./diagrams/...` — never `../diagrams/...`, never repo-rooted paths like `notes/...`.
 
 ## Numbering rules
 
@@ -33,7 +33,7 @@ Always `./diagrams/...` — never `../diagrams/...`, never `src/main/...`.
 > You are helping me build CKAD study notes from lecture screenshots I upload. Follow these rules exactly.
 >
 > **File layout**
-> - Notes live in `src/main/resources/ckad-notes/<SECTION-FOLDER>/`.
+> - Notes live in `notes/<SECTION-FOLDER>/`.
 > - Each lecture = one markdown file, one topic per file, named `<CC>-<chapter-slug>.md`.
 > - Diagrams go in that section's own `<SECTION-FOLDER>/diagrams/` subfolder, named `<NN>-<diagram-slug>.png`.
 >
@@ -48,10 +48,12 @@ Always `./diagrams/...` — never `../diagrams/...`, never `src/main/...`.
 > - Frontmatter alone does NOT render images — never rely on a `companion_diagrams:` list to display anything.
 > - For each diagram you embed, give me an "image save list" at the end of your reply: the exact filename (`<NN>-<slug>.png`) and a one-line description of what that image/screenshot should contain, so I save the right file to the right name.
 >
-> **Style**
+> **Style (lean — no scaffolding)**
 > - Concise, exam-focused. No emojis, no marketing fluff, no padding.
 > - Keep all exam-relevant YAML and `kubectl` commands.
-> - Include a short "Quick recall" checklist at the end of each chapter.
+> - Do NOT add "Why this is in CKAD" preambles, "Key takeaways"/"TL;DR", "Open threads" checklists, instructor narration, or personal anecdotes.
+> - For fields with no imperative generator, show how to recall them with `kubectl explain <path>` instead of telling me to memorize.
+> - End each chapter with a `## References` section of 2-4 canonical, verified `kubernetes.io` links.
 >
 > Confirm the section folder and the starting chapter/diagram numbers back to me, then wait for my first lecture's screenshots.
 >
@@ -62,3 +64,13 @@ Always `./diagrams/...` — never `../diagrams/...`, never `src/main/...`.
 ## Mid-section continuation prompt (fresh chat after the 100-image limit)
 
 > Continuing CKAD notes for section `<SECTION-FOLDER>`. Same rules as before: one topic per file, `<CC>-<slug>.md`; diagrams in `./diagrams/<NN>-<slug>.png` and ALWAYS embedded in the body with `![Caption](./diagrams/<NN>-<slug>.png)` (frontmatter does not render images); concise and exam-focused, no emojis. At the end give me the image save list (filename + description). Resume at chapter `<NEXT-CHAPTER>` and diagram `<NN>`. Here are the next screenshots.
+
+---
+
+## Diagram conventions
+
+- **Format:** PNG, ~1600-1800px wide.
+- **Tool:** matplotlib (preferred) or raw SVG → cairosvg.
+- **Style palette:** dark background `#0d1b2a`, accent magenta `#ff2e93` for titles, text `#e6e6e6`, panels `#16263a` or `#3a3a3a`, terminals `#0a1420`. Code/yellow `#ffd166`, notes/cyan `#7fd1ff` or `#3ec6e0`, success/green `#3fbf5f`, warn/red `#ff4d4d`, purple accent `#7a5cff`.
+- **Earn the diagram:** only generate one that adds something YAML or prose can't (hierarchies, before/after, flow over time, conceptual mappings). Tables of values → use markdown, not an image.
+- **Verify visually:** after rendering, view the PNG and check for text overflow, alignment, and overlap; re-render if needed.
