@@ -110,7 +110,7 @@ Why it matters: if your liveness endpoint also checks the database and the datab
 ## 6. Exam-pattern gotchas
 
 - **Liveness restarts; readiness reroutes.** If a question says "restart the container when the app is unhealthy," that is **liveness**. If it says "stop sending traffic until ready," that is **readiness**. This is the single most likely thing to be tested.
-- **Liveness restart loop.** A liveness probe with too small an `initialDelaySeconds` for a slow app kills the container before it finishes starting, forever. Symptom: a climbing `RESTARTS` count and `CrashLoopBackOff`. Fix: raise `initialDelaySeconds` (or use a startup probe - next thread).
+- **Liveness restart loop.** A liveness probe with too small an `initialDelaySeconds` for a slow app kills the container before it finishes starting, forever. Symptom: a climbing `RESTARTS` count and `CrashLoopBackOff`. Fix: raise `initialDelaySeconds` (or use a startup probe - see `03-startup-probes.md`).
 - **`exec.command` is a YAML list**, not a string - same rule as init containers and readiness probes.
 - **Probe is per container**, under each `spec.containers` entry. In a multi-container pod each container has its own liveness probe, and a liveness failure restarts **only that container**, not the whole pod.
 - **`successThreshold` must be 1 for liveness** (and startup) probes; the API rejects other values. Only readiness may set it higher.

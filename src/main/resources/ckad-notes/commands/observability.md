@@ -41,5 +41,5 @@ minikube addons enable metrics-server         # minikube
 
 ## See also
 
-- `04-observability/03-logging.md`, `04-monitoring-metrics-server.md`
+- `04-observability/04-logging.md`, `05-monitoring-metrics-server.md`
 - `debugging.md` — exec, describe, events, explain
