@@ -67,7 +67,7 @@ bases:
 > resources:
 >   - ../../base        # the base is "a resource that happens to be a directory"
 > ```
-> The lecture (and many real repos, including the GKP overlay) still use `bases:`. It works,
+> The lecture (and many real repos) still use `bases:`. It works,
 > but prefer `resources:` in anything new — and know they mean the same thing when you read
 > the deprecated form.
 

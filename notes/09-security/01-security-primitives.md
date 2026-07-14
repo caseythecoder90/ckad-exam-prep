@@ -68,7 +68,7 @@ This is also how all cluster components authenticate to the API server: kubelet,
 
 Delegate authentication to an external identity system.
 
-**OIDC (OpenID Connect):** The modern enterprise approach. User authenticates with an Identity Provider (Azure AD, Google, Okta, Dex, JPMC's SSO). The IdP issues a JWT token. kubectl presents this JWT in the `Authorization: Bearer` header. The API server validates the JWT's signature against the IdP's public key without contacting the IdP on every request.
+**OIDC (OpenID Connect):** The modern enterprise approach. User authenticates with an Identity Provider (Azure AD, Google, Okta, Dex). The IdP issues a JWT token. kubectl presents this JWT in the `Authorization: Bearer` header. The API server validates the JWT's signature against the IdP's public key without contacting the IdP on every request.
 
 **LDAP:** Older enterprise directory protocol. Usually implemented via an authenticating proxy (like Dex) that speaks OIDC to Kubernetes and LDAP to the directory, rather than LDAP directly to Kubernetes.
 
