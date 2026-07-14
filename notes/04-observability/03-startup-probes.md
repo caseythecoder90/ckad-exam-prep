@@ -50,7 +50,7 @@ Rule of thumb: pick `failureThreshold × periodSeconds` ≈ the app's worst-case
 
 ## 4. Real-world example (Spring Boot Actuator)
 
-This is a production `Deployment` (`caas-management-plane`) using all three probes plus downward-API env vars.
+This is a production `Deployment` (`web-app`) using all three probes plus downward-API env vars.
 
 ![Real-world probe setup with startup, readiness, and liveness](./diagrams/probes-real-example.png)
 
@@ -59,7 +59,7 @@ spec:
   template:
     spec:
       containers:
-        - name: caas-management-plane
+        - name: web-app
           env:
             - name: INFO_KUBE_NAMESPACE
               valueFrom:

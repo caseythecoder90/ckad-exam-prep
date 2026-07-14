@@ -121,11 +121,11 @@ A NetworkPolicy is a textbook selector use: the policy uses a **pod selector** t
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: caas-management-plane-egress
+  name: web-app-egress
 spec:
   podSelector:
     matchLabels:
-      app: caas-management-plane     # the policy applies to pods with this label
+      app: web-app                   # the policy applies to pods with this label
   policyTypes:
     - Egress
   egress:
@@ -137,7 +137,7 @@ spec:
           port: 26100                 # all DB destinations shared this port
 ```
 
-What is happening: `podSelector` picks the app's pods by label, `policyTypes: [Egress]` says "control outbound traffic for these pods," and the `egress` block whitelists TCP to the CockroachDB destinations on `26100` so the app can insert into the database. The selector is the hinge - it scopes the whole policy to just the pods carrying `app: caas-management-plane`. (Note: in NetworkPolicy YAML the selector is written as `matchLabels` or `matchExpressions`; the semantics are equality on the `app` label. NetworkPolicy is a later topic; this is just to anchor why selectors matter.)
+What is happening: `podSelector` picks the app's pods by label, `policyTypes: [Egress]` says "control outbound traffic for these pods," and the `egress` block whitelists TCP to the CockroachDB destinations on `26100` so the app can insert into the database. The selector is the hinge - it scopes the whole policy to just the pods carrying `app: web-app`. (Note: in NetworkPolicy YAML the selector is written as `matchLabels` or `matchExpressions`; the semantics are equality on the `app` label. NetworkPolicy is a later topic; this is just to anchor why selectors matter.)
 
 ### `function` as an organizing label
 

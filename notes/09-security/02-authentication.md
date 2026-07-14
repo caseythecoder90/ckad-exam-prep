@@ -66,7 +66,7 @@ The API server supports multiple authentication plugins simultaneously. A reques
 | Static Token File | Deprecated — never use | Teaching only |
 | X.509 Certificates | Standard | Cluster components, kubeadm bootstrap |
 | OIDC | Standard for humans | Enterprise users, most modern clusters |
-| Kerberos (via OIDC) | Enterprise | Active Directory environments (JPMC) |
+| Kerberos (via OIDC) | Enterprise | Active Directory environments |
 | ServiceAccount JWT | Standard | Pods / in-cluster applications |
 | Exec Plugin | Standard (kubeconfig) | Wraps any external auth tool |
 | Webhook Token Auth | Advanced | Custom auth logic |
@@ -193,7 +193,7 @@ You type your password once. The client sends your username to the AS. The AS re
 The TGT is an encrypted blob you can't read directly (it's for the KDC), but you carry it. It says "the AS verified this principal at this time, expiring at T." Typically valid for 8 hours. This is why you don't need to re-enter your password every time at work — you authenticated once, got a TGT, and it's still valid.
 
 **Step 3 — Requesting a service ticket**
-When you want to access a service (say, Kubernetes), your client presents the TGT to the TGS and says "I want a ticket for `HTTP/kubernetes.jpmc.com`." The TGS validates the TGT, creates a **service ticket** for that specific service, and returns it.
+When you want to access a service (say, Kubernetes), your client presents the TGT to the TGS and says "I want a ticket for `HTTP/kubernetes.example.com`." The TGS validates the TGT, creates a **service ticket** for that specific service, and returns it.
 
 **Step 4 — Presenting the service ticket**
 Your client presents the service ticket to the service via GSSAPI/SPNEGO (HTTP-layer protocols that carry Kerberos tokens). The service decrypts the ticket using its own secret key (shared with the KDC during service registration). If it decrypts correctly, you're authenticated.
@@ -280,7 +280,7 @@ kubectl config view                            # show kubeconfig
 kubectl config current-context                 # active context
 kubectl config use-context casey@prod          # switch context
 kubectl config get-contexts                    # list all contexts
-kubectl config set-context --current --namespace=700515d201053-caas-dev  # change default ns
+kubectl config set-context --current --namespace=web-app-dev  # change default ns
 ```
 
 ---
