@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(git add *)",
-      "Bash(git switch *)",
-      "PowerShell(python \"C:\\\\Users\\\\casey\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-casey-Projects-CKAD-PREP\\\\a819217c-8d7c-49aa-998a-b9fc38d72521\\\\scratchpad\\\\gen_probes.py\")"
-    ]
-  }
-}

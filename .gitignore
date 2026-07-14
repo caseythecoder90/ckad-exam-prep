@@ -63,3 +63,6 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Claude Code (per-machine local settings) ###
+.claude/settings.local.json
