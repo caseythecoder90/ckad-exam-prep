@@ -89,7 +89,18 @@ Binding needs the PVC's `accessModes` + requested size to fit the PV, and matchi
 
 ## StorageClasses (dynamic provisioning)
 
-No `kubectl create storageclass` — always declarative.
+No `kubectl create storageclass` — always declarative. Two traps: it is **not** core `v1`, and it has **no `spec:`** — `provisioner` and friends are top-level, next to `metadata`.
+
+```yaml
+apiVersion: storage.k8s.io/v1              # NOT v1
+kind: StorageClass
+metadata:
+  name: manual
+provisioner: kubernetes.io/no-provisioner  # top-level, no spec: above it
+# volumeBindingMode: WaitForFirstConsumer  # PVC stays Pending until a pod mounts it
+```
+
+`kubernetes.io/no-provisioner` provisions nothing — the class is just a matching label for a hand-written PV. A real provisioner creates the PV for you, and you write no PV at all. Tell them apart by whether the question names a PV to create.
 
 ```bash
 k get sc                                   # which one is (default)?

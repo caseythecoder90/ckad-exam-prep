@@ -530,7 +530,7 @@ k get sc                                    # which is (default)?
 k describe sc standard                      # provisioner, volumeBindingMode
 ```
 
-No generator for PV/PVC/StorageClass — type the YAML. Apply PV+PVC and confirm `Bound` before writing the pod that consumes it. PVC must repeat the PV's `storageClassName` and `accessModes` to bind; size is `capacity.storage` on the PV but `resources.requests.storage` on the PVC.
+No generator for PV/PVC/StorageClass — type the YAML. Apply PV+PVC and confirm `Bound` before writing the pod that consumes it. PVC must repeat the PV's `storageClassName` and `accessModes` to bind; size is `capacity.storage` on the PV but `resources.requests.storage` on the PVC. StorageClass is `storage.k8s.io/v1` (not core `v1`) and has **no `spec:`** — `provisioner` is top-level.
 
 `WaitForFirstConsumer` keeps a PVC Pending until a pod consumes it (normal). Full reference: [`commands/storage.md`](commands/storage.md); memorizable skeleton and timed drill: [`08-state-persistance/08-pv-pvc-speed-run.md`](08-state-persistance/08-pv-pvc-speed-run.md).
 
