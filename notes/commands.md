@@ -523,13 +523,16 @@ Extra flags: `--class`, `--default-backend`, `--annotation`. v1 traps: `pathType
 ```bash
 k get pv                                   # capacity, access modes, reclaim policy, status, claim
 k get pvc                                  # Pending -> Bound
+k get pv,pvc,pod                            # one-shot check: Bound / Bound / Running
 k describe pvc myclaim                      # why still Pending
 k get pvc myclaim -o jsonpath='{.spec.volumeName}'
 k get sc                                    # which is (default)?
 k describe sc standard                      # provisioner, volumeBindingMode
 ```
 
-`WaitForFirstConsumer` keeps a PVC Pending until a pod consumes it (normal). No `create storageclass` — declarative. Full reference: [`commands/storage.md`](commands/storage.md).
+No generator for PV/PVC/StorageClass — type the YAML. Apply PV+PVC and confirm `Bound` before writing the pod that consumes it. PVC must repeat the PV's `storageClassName` and `accessModes` to bind; size is `capacity.storage` on the PV but `resources.requests.storage` on the PVC.
+
+`WaitForFirstConsumer` keeps a PVC Pending until a pod consumes it (normal). Full reference: [`commands/storage.md`](commands/storage.md); memorizable skeleton and timed drill: [`08-state-persistance/08-pv-pvc-speed-run.md`](08-state-persistance/08-pv-pvc-speed-run.md).
 
 ---
 
