@@ -162,6 +162,28 @@ k create serviceaccount build-bot
 
 ---
 
+## When there is no generator
+
+Plenty of exam resources have no `create`/`run` equivalent. Reaching for the docs is the slowest of the four options — work down this ladder instead:
+
+1. **Confirm there's no generator.** `k create --help` lists every supported kind in one screen. If the kind isn't there, `$do` can't help you.
+2. **Copy a live object.** Fastest path when the cluster already has one: `k get <kind> <existing> -o yaml > new.yaml`, then strip `status`, `metadata.uid`, `resourceVersion`, `creationTimestamp` and rename it.
+3. **Recall fields with `explain`.** `k explain <kind>.spec --recursive | head -30` gives you the field tree without leaving the terminal. Drop `--recursive` and drill into one path (`k explain pvc.spec.resources`) when you only need the leaf names.
+4. **Docs.** Last resort, and only via a bookmarked task page — the site search buries the manifest you want.
+
+**Memorize the shapes you'll type on every practice test**, because for these the ladder is all overhead:
+
+| Kind | Why no generator hurts |
+|---|---|
+| PersistentVolume / PersistentVolumeClaim | highest-frequency storage question; see `storage.md` |
+| NetworkPolicy | `podSelector` + `ingress`/`egress` nesting is easy to mis-indent |
+| StorageClass | declarative only |
+| Pod sub-specs: `volumes`, probes, `securityContext`, `resources`, `initContainers`, affinity/tolerations | generated pod YAML never includes them |
+
+Everything else stays on the ladder — `explain` is the right tool for fields you meet once, not for the five shapes you meet constantly.
+
+---
+
 ## Exam-time strategy
 
 1. **Read the whole question first.** Note: namespace, labels required, image (and version!), env vars, ports, replicas.

@@ -27,6 +27,51 @@ spec:
 
 ## PersistentVolumes & Claims
 
+No generator exists for either — type it. The full chain, memorized (see `08-state-persistance/08-pv-pvc-speed-run.md` for the drill):
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: log-volume
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
+  accessModes: ["ReadWriteMany"]
+  hostPath:
+    path: /opt/volume/nginx
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: log-claim
+spec:
+  storageClassName: manual        # must match the PV
+  accessModes: ["ReadWriteMany"]  # must match the PV
+  resources:
+    requests:
+      storage: 200Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: logger
+spec:
+  containers:
+  - name: logger
+    image: nginx:alpine
+    volumeMounts:
+    - name: log
+      mountPath: /var/www/nginx
+  volumes:
+  - name: log
+    persistentVolumeClaim:
+      claimName: log-claim
+```
+
+A PVC is the PV with the backend removed and `capacity` renamed to `resources.requests` — yank the PV block and edit it rather than retyping. Apply PV+PVC first and confirm `Bound` before writing the pod.
+
 ```bash
 k create -f pv.yaml
 k create -f pvc.yaml
@@ -44,7 +89,18 @@ Binding needs the PVC's `accessModes` + requested size to fit the PV, and matchi
 
 ## StorageClasses (dynamic provisioning)
 
-No `kubectl create storageclass` — always declarative.
+No `kubectl create storageclass` — always declarative. Two traps: it is **not** core `v1`, and it has **no `spec:`** — `provisioner` and friends are top-level, next to `metadata`.
+
+```yaml
+apiVersion: storage.k8s.io/v1              # NOT v1
+kind: StorageClass
+metadata:
+  name: manual
+provisioner: kubernetes.io/no-provisioner  # top-level, no spec: above it
+# volumeBindingMode: WaitForFirstConsumer  # PVC stays Pending until a pod mounts it
+```
+
+`kubernetes.io/no-provisioner` provisions nothing — the class is just a matching label for a hand-written PV. A real provisioner creates the PV for you, and you write no PV at all. Tell them apart by whether the question names a PV to create.
 
 ```bash
 k get sc                                   # which one is (default)?
@@ -60,4 +116,5 @@ Gotchas: `volumeBindingMode: WaitForFirstConsumer` keeps a PVC `Pending` until a
 ## See also
 
 - `08-state-persistance/03-kubernetes-volumes.md`, `04-persistent-volumes-and-claims.md`, `05-storage-classes.md`
+- `08-state-persistance/08-pv-pvc-speed-run.md` — building the chain from memory under time pressure
 - `statefulsets.md` — per-pod PVCs via volumeClaimTemplates
