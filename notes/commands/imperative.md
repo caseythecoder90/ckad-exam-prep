@@ -178,9 +178,38 @@ Plenty of exam resources have no `create`/`run` equivalent. Reaching for the doc
 | PersistentVolume / PersistentVolumeClaim | highest-frequency storage question; see `storage.md` |
 | NetworkPolicy | `podSelector` + `ingress`/`egress` nesting is easy to mis-indent |
 | StorageClass | declarative only |
-| Pod sub-specs: `volumes`, probes, `securityContext`, `resources`, `initContainers`, affinity/tolerations | generated pod YAML never includes them |
+| Pod sub-specs: `volumes`, probes, `securityContext`, `initContainers`, affinity/tolerations | generated pod YAML never includes them |
 
 Everything else stays on the ladder — `explain` is the right tool for fields you meet once, not for the five shapes you meet constantly.
+
+---
+
+## `kubectl set` — the third generator
+
+Easy to forget because it isn't `create` or `run`, but `set` writes several fields the scaffold leaves empty. Each subcommand works two ways: against a **live object** (patches it immediately) or against a **file** with `--local -o yaml` (edits the manifest, never touches the server).
+
+```bash
+k set image deployment/web nginx=nginx:1.25              # triggers a rolling update
+k set env deployment/web ENV=staging
+k set env deployment/web --from=configmap/app-config     # all keys at once
+k set resources deployment/web --requests=cpu=200m --limits=cpu=500m,memory=256Mi
+k set serviceaccount deployment/web build-bot
+
+# Same, but rewriting a local file instead of the cluster
+k set resources -f deploy.yaml --requests=cpu=200m --local -o yaml > out.yaml
+```
+
+**`set resources` is why `resources` is not in the no-generator table above** — you never have to hand-type the `requests`/`limits` nesting.
+
+`k explain` is weak for this one field anyway: `requests` and `limits` are `map[string]Quantity`, so explain confirms the two keys exist but **will not list `cpu` or `memory`**, because those are arbitrary map keys rather than typed fields. Either use `set resources`, or remember the four-line shape:
+
+```yaml
+        resources:          # scaffold already emits `resources: {}` at this indent
+          requests:
+            cpu: 200m
+```
+
+Note `cpu: 200m` and `cpu: 0.2` are the same value. Memory has no equivalent shorthand, and `Mi` (1024-based) differs from `M` (1000-based).
 
 ---
 
