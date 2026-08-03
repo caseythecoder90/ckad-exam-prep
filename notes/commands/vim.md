@@ -91,6 +91,37 @@ Esc      " change applies to ALL selected lines
 :noh               " clear the search highlight when done
 ```
 
+## Running kubectl without leaving vim
+
+The exam desktop has `tmux` pre-installed and you can open more than one terminal, but for "check a field, then type it into the manifest" a split is usually the slower option — you still have to read across windows and retype. These three keep you in one window, and two of them put the text directly where you want it.
+
+**1. Suspend and come back (`Ctrl+z` / `fg`).** The lowest-effort option, and the one to default to. `Ctrl+z` drops vim to the background and returns you to the shell; run anything; `fg` puts you straight back with the cursor where you left it.
+
+```
+Ctrl+z                       " vim -> background
+k explain pod.spec.containers.resources
+fg                           " back into vim, cursor unmoved
+```
+
+**2. Read command output *into* the buffer (`:r !cmd`).** Inserts stdout below the cursor. This is the one that replaces a split terminal — pull real YAML in and delete what you don't need, instead of reading and retyping:
+
+```vim
+:r !kubectl get deploy web -o yaml        " pull a live manifest into the file
+:r !kubectl explain pod.spec.containers.resources
+```
+
+Position the cursor first — output lands on the following line, already at column 0, so expect to re-indent a pulled block (`V` select, then `>`).
+
+**3. Look without inserting (`:!cmd`).** Runs the command, shows output, waits for Enter, returns to the unchanged buffer:
+
+```vim
+:!kubectl get pv,pvc
+```
+
+Use `:!` to *check* something (did the PVC bind?) and `:r !` to *harvest* something (give me the fields).
+
+> `:r !kubectl explain ...` pastes the prose descriptions too, so it is usually more deleting than typing. Prefer it for `-o yaml` output; prefer `Ctrl+z` for reading `explain`.
+
 ## Recommended `~/.vimrc` for the exam
 
 ```vim
