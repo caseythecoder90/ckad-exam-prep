@@ -3,16 +3,36 @@
 ## Job (runs once to completion)
 
 ```bash
-k create job pi --image=perl -- perl -Mbignum=bpi -wle "print bpi(100)" $do > job.yaml
+k create job pi --image=perl $do -- perl -Mbignum=bpi -wle "print bpi(100)" > job.yaml
 k create job pi --image=perl -- perl -Mbignum=bpi -wle "print bpi(100)"     # imperative
 ```
 
 ## CronJob (recurring on a cron schedule)
 
 ```bash
-k create cronjob backup --image=busybox --schedule="0 */6 * * *" -- echo backup $do > cron.yaml
+k create cronjob backup --image=busybox --schedule="0 */6 * * *" $do -- echo backup > cron.yaml
 k create cronjob backup --image=busybox --schedule="*/5 * * * *" -- /backup.sh
 ```
+
+## The `--` separator (two gotchas that produce wrong YAML)
+
+**Multi-command in `--` → always `sh -c "cmd1 && cmd2"`, never bare `&&`.** The container command is an argv list with no shell to interpret `&&`, so your local shell splits the line and runs the second half on your own machine.
+
+```bash
+# WRONG — creates a job running only `cmd1`, then runs `cmd2` locally
+k create job x -n batch --image=busybox -- cmd1 && cmd2
+
+# RIGHT
+k create job x -n batch --image=busybox -- sh -c "cmd1 && cmd2"
+```
+
+**Every kubectl flag goes before `--`.** Flag parsing stops at the separator, so `$do` after it is swallowed into the container command — the Job is created for real with junk args instead of printing YAML.
+
+```bash
+k create job x -n batch --image=busybox $do -- sh -c "cmd1 && cmd2" > job.yaml
+```
+
+Shape: `k create job <name> <all flags> -- sh -c "…"`. Full detail in [`imperative.md`](imperative.md).
 
 ## Trigger a CronJob manually
 
