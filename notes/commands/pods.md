@@ -8,8 +8,11 @@ k run nginx --image=nginx --port=80 $do > pod.yaml
 k run nginx --image=nginx --labels="app=web,tier=frontend" $do > pod.yaml
 k run nginx --image=nginx --env="ENV=prod" $do > pod.yaml
 k run nginx --image=nginx -n <namespace> $do > pod.yaml
-k run busybox --image=busybox --command -- sleep 3600 $do > pod.yaml
+k run busybox --image=busybox --command $do -- sleep 3600 > pod.yaml
+k run busybox --image=busybox $do -- sh -c "date && sleep 3600" > pod.yaml
 ```
+
+Flags go **before** `--`; everything after it is the container command. Multiple commands always need `sh -c "cmd1 && cmd2"` — see [`imperative.md`](imperative.md).
 
 ## Imperative create (no file)
 

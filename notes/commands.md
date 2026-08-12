@@ -83,6 +83,22 @@ k describe <resource> <name>
 
 `--dry-run=server` does the same but the API server also validates (catches missing namespaces, unknown fields, admission rejections). Still no persist.
 
+### The `--` separator — two rules
+
+Everything after `--` is the **container's command**, not kubectl's flags. Both failure modes are silent: you get a created resource with the wrong spec, not an error.
+
+```bash
+# Rule 1 — multi-command in -- → always sh -c "cmd1 && cmd2", never bare &&
+k create job x -n batch --image=busybox -- cmd1 && cmd2              # WRONG: cmd2 runs locally
+k create job x -n batch --image=busybox -- sh -c "cmd1 && cmd2"      # RIGHT
+
+# Rule 2 — kubectl flags go BEFORE --, or they become command args
+k create job x --image=busybox -- sh -c "cmd1 && cmd2" $do > job.yaml       # WRONG: job really created
+k create job x -n batch --image=busybox $do -- sh -c "cmd1 && cmd2" > job.yaml   # RIGHT
+```
+
+Same for `;`, `|`, `>`, `$VAR`, globs — any shell metacharacter needs `sh -c`. Use single quotes (`'echo $HOME'`) when the variable must expand inside the container. Shape: `k create <kind> <name> <all flags> -- sh -c "…"`.
+
 ### Exam-time strategy
 
 1. Read the whole question — note namespace, labels, image version, env vars.
@@ -294,11 +310,14 @@ k get secret db-creds -o jsonpath='{.data.password}' | base64 -d   # decode a va
 ## 9. Jobs & CronJobs
 
 ```bash
-# Job (runs once to completion)
-k create job pi --image=perl -- perl -Mbignum=bpi -wle "print bpi(100)" $do > job.yaml
+# Job (runs once to completion) — note $do BEFORE --, command last
+k create job pi --image=perl $do -- perl -Mbignum=bpi -wle "print bpi(100)" > job.yaml
 
 # CronJob (recurring; cron-format schedule)
-k create cronjob backup --image=busybox --schedule="0 */6 * * *" -- echo "backup" $do > cron.yaml
+k create cronjob backup --image=busybox --schedule="0 */6 * * *" $do -- echo "backup" > cron.yaml
+
+# Multiple commands always need sh -c (see section 2, "The -- separator")
+k create job migrate -n batch --image=busybox -- sh -c "date && echo done"
 
 # Inspect
 k get jobs

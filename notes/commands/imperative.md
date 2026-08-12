@@ -135,6 +135,9 @@ k create secret docker-registry regcred \
 k create job pi --image=perl -- perl -Mbignum=bpi -wle "print bpi(100)"
 k create cronjob backup --image=busybox --schedule="0 */6 * * *" -- echo backup
 
+# Multiple commands: wrap in sh -c (see "The -- separator" below)
+k create job migrate --image=busybox -- sh -c "date && echo done"
+
 # Manually trigger a CronJob's pod template as a one-off Job
 k create job --from=cronjob/backup manual-backup
 ```
@@ -159,6 +162,47 @@ k create clusterrolebinding alice-nodes --clusterrole=node-reader --user=alice
 ```bash
 k create serviceaccount build-bot
 ```
+
+---
+
+## The `--` separator — two rules
+
+Everything after `--` becomes the **container's command**, not kubectl's flags. Two failure modes, both silent — you get a created resource with the wrong spec, not an error.
+
+### Rule 1 — multi-command in `--` → always `sh -c "cmd1 && cmd2"`, never bare `&&`
+
+A container command is an exec-style argv list with **no shell in it**, so nothing there can interpret `&&`. Your local shell grabs it first and splits the line in two.
+
+```bash
+# WRONG — local shell runs kubectl, then runs `cmd2` on your own machine
+k create job x -n batch --image=busybox -- cmd1 && cmd2
+
+# RIGHT — one quoted string, handed to a shell inside the container
+k create job x -n batch --image=busybox -- sh -c "cmd1 && cmd2"
+```
+
+Same rule for any shell metacharacter: `;`, `|`, `>`, `$VAR`, globs. Applies everywhere `--` appears — `k run`, `k create job|cronjob|deployment`, `k exec`.
+
+Quote choice matters when the command contains `$`:
+
+```bash
+-- sh -c "echo $HOME"     # local shell expands $HOME before kubectl sees it
+-- sh -c 'echo $HOME'     # container's shell expands it — usually what you want
+```
+
+### Rule 2 — kubectl flags go BEFORE `--`
+
+Flag parsing stops at `--`. A `$do` placed after it is swallowed into the container command, so the resource is **created for real** and its args are wrong.
+
+```bash
+# WRONG — job really gets created; command becomes ["sh","-c","...","--dry-run=client","-o","yaml"]
+k create job x --image=busybox -- sh -c "cmd1 && cmd2" $do > job.yaml
+
+# RIGHT — every kubectl flag (-n, --image, --schedule, $do) first, command last
+k create job x -n batch --image=busybox $do -- sh -c "cmd1 && cmd2" > job.yaml
+```
+
+Shape to type from muscle memory: **`k create <kind> <name> <all flags> -- sh -c "…"`**.
 
 ---
 
@@ -233,6 +277,7 @@ Note `cpu: 200m` and `cpu: 0.2` are the same value. Memory has no equivalent sho
 - Bare `--dry-run` is deprecated. Always specify `--dry-run=client` or `--dry-run=server`.
 - `kubectl expose` reads selector labels from the target. If the target has no labels (or the wrong ones), the Service will have no endpoints.
 - `--from-literal` can be repeated; you don't need separate `create configmap` calls per key.
+- Chaining commands after `--` without `sh -c "..."` splits the line at `&&` and runs the second half locally. Flags after `--` are parsed as command args, not flags. See "The `--` separator" above.
 - `$do` is **not a default alias** in the exam — you set it yourself in `~/.bashrc` at the start. See `setup.md`.
 - When generating a YAML for a Deployment and then editing replicas/image, remember to also fix `metadata.name` if you copy-paste the file as a template for a second resource.
 
