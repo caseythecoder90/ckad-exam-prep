@@ -56,6 +56,19 @@ The whole point: enter Insert mode at the *right spot* instead of `i` then arrow
 
 YAML lives and dies by indentation, so most exam-time pain is fixing indent or pasting cleanly. These four solve 90% of it.
 
+**0. How to enter paste mode (and get back out).** `:set paste` is a *Normal-mode*
+command — press `Esc` first, then type it and hit Enter. Confirm it worked by
+entering Insert mode: the status line reads `-- INSERT (paste) --`. Paste with
+your terminal's own shortcut (`Ctrl+Shift+V` in most Linux terminals and the exam
+console, right-click in PuTTY, `Cmd+V` on macOS). Then **turn it back off** with
+`:set nopaste` — while paste is on, autoindent is disabled, so anything you type
+by hand afterwards comes out flat.
+
+```vim
+:set paste?      " check: prints 'paste' or 'nopaste'
+set pastetoggle=<F2>   " in ~/.vimrc: flip paste on/off with one key, even in Insert mode
+```
+
 **1. Pasting a multi-line block — the two failure modes.**
 
 *Paste mode OFF* → the **staircase**: autoindent re-indents each pasted line on
@@ -166,11 +179,14 @@ Use `:!` to *check* something (did the PVC bind?) and `:r !` to *harvest* someth
 ## Recommended `~/.vimrc` for the exam
 
 ```vim
-set expandtab tabstop=2 shiftwidth=2 number
+set expandtab tabstop=2 shiftwidth=2 number pastetoggle=<F2>
 ```
 
 - `expandtab` — Tab key inserts spaces (YAML rejects tabs).
 - `tabstop=2 shiftwidth=2` — 2-space indents, the Kubernetes YAML convention.
+  Also makes each `>` shift exactly one YAML level.
 - `number` — show line numbers (so error messages like "line 23" are useful).
+- `pastetoggle=<F2>` — one key to flip paste mode, so you never leave it on by
+  accident.
 
 See `setup.md` for the one-liner to write this file at the start of the exam.

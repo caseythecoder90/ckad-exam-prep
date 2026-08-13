@@ -24,10 +24,10 @@ k delete pod stuck-pod $now                   # force-delete
 
 ## Vim config for YAML
 
-YAML hates tabs. This `.vimrc` enforces 2-space indents and shows line numbers (useful when the exam tells you "the error is on line 23").
+YAML hates tabs. This `.vimrc` enforces 2-space indents, shows line numbers (useful when the exam tells you "the error is on line 23"), and binds `F2` to toggle paste mode so pasted blocks don't get re-indented into a staircase — see [`vim.md`](vim.md) for how to paste YAML without breaking the indentation.
 
 ```bash
-echo "set expandtab tabstop=2 shiftwidth=2 number" > ~/.vimrc
+echo "set expandtab tabstop=2 shiftwidth=2 number pastetoggle=<F2>" > ~/.vimrc
 ```
 
 ## Confirm where you are before doing anything
