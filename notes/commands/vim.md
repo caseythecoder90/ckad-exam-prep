@@ -56,13 +56,54 @@ The whole point: enter Insert mode at the *right spot* instead of `i` then arrow
 
 YAML lives and dies by indentation, so most exam-time pain is fixing indent or pasting cleanly. These four solve 90% of it.
 
-**1. Paste without the auto-indent staircase.** When you paste a multi-line block (e.g. copied from the Kubernetes docs) with autoindent on, each line indents further than the last and the block turns into a staircase. Turn it off first:
+**1. Pasting a multi-line block — the two failure modes.**
+
+*Paste mode OFF* → the **staircase**: autoindent re-indents each pasted line on
+top of the indentation it already carries, so the block marches right.
 
 ```vim
 :set paste     " paste raw, no auto-indent
 " ...paste your block...
 :set nopaste   " turn it back on so o/O still auto-indent
 ```
+
+*Paste mode ON* → the **left-shift**, which surprises people because paste mode
+was supposed to be the fix. Symptom: the first pasted line lands perfectly, every
+line after it sits too far left.
+
+```yaml
+    terminationMessagePolicy: File
+    startupProbe:        # line 1 — landed at the cursor, looks right
+  httpGet:               # lines 2+ — column 0 + their own indent = too far left
+    path: /
+    port: 80
+```
+
+The rule that explains it: **paste mode inserts your clipboard verbatim — line 1
+starts at the cursor, every later line starts at column 0** plus whatever
+indentation it carried. Vim adds nothing, so only line 1 gets your cursor's indent.
+
+The reliable recipe — make line 1 start at column 0 too, then move the block as a
+unit (relative indentation inside the block is always preserved):
+
+```
+" 1. cursor on the line ABOVE where the block goes
+o          " opens a new line at column 0 (paste mode = no auto-indent)
+           " 2. paste
+Esc
+" 3. select the pasted block and shift it into place
+V4j        " line-visual, extend down 4 lines (or V} to the end of the block)
+2>         " shift right 2 levels (with shiftwidth=2 that's 4 columns)
+```
+
+`>` shifts right, `<` shifts left, `.` repeats the last shift. Copying your source
+block flush-left makes this fully predictable: always paste at column 0, then
+shift right N times.
+
+> For a short block you've memorized — a probe, a `securityContext`, an env var —
+> **type it with paste mode off** instead. Autoindent keeps each new line at the
+> previous line's indent, so it just flows. Reserve pasting for blocks big enough
+> that retyping is genuinely slower.
 
 **2. Indent / outdent a whole block.** Visual-select the lines, then shift. Repeatable with `.`:
 
