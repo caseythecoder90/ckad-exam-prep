@@ -29,6 +29,7 @@ ckad-study-guide/
 │   ├── 11-kustomize/
 │   ├── commands/              # per-topic command references (study one resource at a time)
 │   ├── commands.md            # global single-file command reference (Ctrl+F across everything)
+│   ├── exam-wording.md        # question phrasing → YAML field, plus time triage
 │   └── NOTES-WORKFLOW.md      # how these notes are authored
 ├── examples/                  # runnable manifests that accompany the notes (growing)
 └── app/                       # planned: a real Java app deployed on Kubernetes (see Roadmap)
@@ -53,8 +54,9 @@ ckad-study-guide/
 
 1. **Learn a topic** — read its chapter in `notes/<section>/`. Each ends with exam-pattern gotchas.
 2. **Drill the commands** — [`notes/commands/`](notes/commands/) has one focused file per resource; [`notes/commands.md`](notes/commands.md) is the single-page version to `Ctrl+F`.
-3. **Work imperatively** — start with [`notes/commands/imperative.md`](notes/commands/imperative.md). On the exam, generating YAML with `kubectl ... --dry-run=client -o yaml` and editing it beats hand-writing manifests.
-4. **Reference the official docs** — kubernetes.io is allowed during the exam. Each chapter links the canonical pages so you can practice navigating them under time pressure.
+3. **Work imperatively** — start with [`notes/commands/imperative.md`](notes/commands/imperative.md). On the exam, generating YAML with `kubectl ... --dry-run=client -o yaml` and editing it beats hand-writing manifests. Then [`notes/commands/modifying-resources.md`](notes/commands/modifying-resources.md) for the other half of the job: changing resources that already exist (`set` vs `patch` vs `edit` vs export→apply).
+4. **Translate the question** — [`notes/exam-wording.md`](notes/exam-wording.md) maps the exam's recurring phrasings ("no Pod may be unavailable", "only runs during start") onto the fields they mean, so a question becomes a lookup instead of a puzzle.
+5. **Reference the official docs** — kubernetes.io is allowed during the exam. Each chapter links the canonical pages so you can practice navigating them under time pressure.
 
 ## About the CKAD exam
 
