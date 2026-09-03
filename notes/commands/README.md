@@ -63,8 +63,8 @@ Both stay in sync — when a notes chapter adds new commands, update **both** th
 
 | File | What's in it |
 |---|---|
-| [`helm.md`](helm.md) | Repos, install/upgrade/rollback, values, `template`, `pull` |
-| [`kustomize.md`](kustomize.md) | `-k` vs `-f`, `kustomize build`/`edit`, transformers, patches, overlays |
+| [`helm.md`](helm.md) | Repos, install/upgrade/rollback, values, `template`, `pull`, the `ls -a` / `--reuse-values` / rollback-revision traps |
+| [`kustomize.md`](kustomize.md) | `-k` vs `-f`, an annotated `kustomization.yaml` (transformers, patches, generators), `kustomize edit` where available |
 
 ## Conventions
 

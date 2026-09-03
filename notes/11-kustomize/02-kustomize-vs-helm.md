@@ -3,7 +3,7 @@ section: "11-kustomize"
 chapter: "02"
 title: "Kustomize vs Helm"
 course_ref: "Mumshad Mannambeth CKAD — Kustomize vs Helm"
-examinable: partial         # Kustomize examinable; Helm = ecosystem awareness only
+examinable: true            # both: Kustomize, and Helm as a user of existing charts
 kind: "conceptual"
 companion_diagrams:
   - "diagrams/04-kustomize-vs-helm.png"
@@ -16,8 +16,11 @@ Helm is the *other* answer to the same question from ch.01 — "how do I customi
 manifests per environment without copy-pasting?" Same goal, fundamentally
 different mechanism. Know how the two differ and why a team picks one.
 
-**CKAD scope:** Kustomize is the examinable tool. Helm shows up only as general
-ecosystem awareness — you won't be asked to author a chart in the exam.
+**CKAD scope:** both are examinable. Kustomize as covered in this section;
+Helm as a *user* — the curriculum item is "use the Helm package manager to
+deploy existing packages", so installing, upgrading, rolling back and removing
+releases of a given chart, not authoring one. See
+`../10-helm-fund/03-helm-exam-patterns.md`.
 
 ---
 
