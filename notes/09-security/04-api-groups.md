@@ -3,7 +3,7 @@ section: 09-security
 chapter: 04
 title: API Groups
 course: CKAD — Mumshad Mannambeth (KodeKloud/Udemy)
-examinable: YES — apiGroups: field in RBAC rules is directly tested; URL structure is background knowledge
+examinable: "YES — apiGroups: field in RBAC rules is directly tested; URL structure is background knowledge"
 companion_diagrams:
   - diagrams/04-api-groups-tree.png
 ---

@@ -1,11 +1,9 @@
 ---
-section: 07-storage
-chapter: 07
-title: Headless Services and Per-Pod DNS
-course: CKAD — Mumshad Mannambeth (KodeKloud/Udemy)
-examinable: YES — clusterIP: None, per-pod DNS format, serviceName wiring
-depth_note: Extra depth on kube-proxy internals
-cross_reference: ch06-statefulsets.md (ordering, naming, podManagementPolicy)
+section: 08-state-persistance
+chapter: "07"
+title: "Headless Services and Per-Pod DNS"
+course: "CKAD — Mumshad Mannambeth (KodeKloud/Udemy)"
+examinable: "YES — clusterIP: None, per-pod DNS format, serviceName wiring"
 companion_diagrams:
   - diagrams/14-service-implementation-kube-proxy.png
   - diagrams/15-regular-vs-headless-service.png
