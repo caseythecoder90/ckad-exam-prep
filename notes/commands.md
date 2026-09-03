@@ -108,6 +108,36 @@ Same for `;`, `|`, `>`, `$VAR`, globs — any shell metacharacter needs `sh -c`.
 5. Always pass `-n <ns>` or set the default namespace first — forgetting this is the most common silly mistake.
 6. Verify with `k get` and `k describe` (check the `Events:` section).
 
+### Changing something that already exists
+
+Generation covers "create X". Many questions instead hand you a live resource
+to modify. Four ways, fastest first — full detail in
+[`commands/modifying-resources.md`](commands/modifying-resources.md).
+
+```bash
+# 1. A `set` subcommand exists? (~5s) — these six are the whole list
+k set image deploy/web nginx=nginx:1.31-alpine
+k set env deploy/web APP_VERSION=2                 # also triggers a rollout
+k set resources deploy/web --requests=memory=20Mi --limits=memory=50Mi
+k set serviceaccount deploy/web my-sa
+k set selector svc/web-svc 'app=web,version=blue'
+k set subject rolebinding/rb --user=jane
+
+# 2. Know the field path? patch (~15s)
+k patch deploy cassini -p '{"spec":{"strategy":{"rollingUpdate":{"maxSurge":2,"maxUnavailable":0}}}}'
+k patch deploy web --type=json -p='[{"op":"add","path":"/spec/template/spec/containers/0/ports/0/hostPort","value":80}]'
+
+# 3. Otherwise edit (~30s) — nothing to memorize, any field
+k edit deploy web -n mercury
+
+# 4. Task wants a FILE, or the field is immutable (~60s)
+k get deploy web -o yaml > d.yaml && vim d.yaml && k apply -f d.yaml
+k replace -f pod.yaml --force        # immutable fields = delete + recreate
+```
+
+Immutable on the CKAD: Deployment `spec.selector`, most of a Job spec, nearly
+all of a Pod spec, Service `clusterIP`, PVC `storageClassName`/`accessModes`.
+
 ---
 
 ## 3. Inspecting & debugging (works for any pod)

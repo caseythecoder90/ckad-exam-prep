@@ -11,6 +11,7 @@ Both stay in sync — when a notes chapter adds new commands, update **both** th
 | File | What's in it |
 |---|---|
 | [`imperative.md`](imperative.md) | **The exam time-saver.** Imperative one-liners + `--dry-run=client -o yaml` to generate manifests. Read this first. |
+| [`modifying-resources.md`](modifying-resources.md) | The other half: changing resources that already exist — `set` vs `patch` vs `edit` vs export→apply, and which fields are immutable. |
 | [`setup.md`](setup.md) | Aliases (`k`, `$do`, `$now`), `.bashrc`, vim config, context/namespace verification |
 | [`cluster-context.md`](cluster-context.md) | `kind` clusters, contexts, switching namespace defaults |
 | [`debugging.md`](debugging.md) | `logs`, `exec`, `describe`, `events`, `explain`, `api-resources` |
@@ -25,7 +26,7 @@ Both stay in sync — when a notes chapter adds new commands, update **both** th
 | [`multi-container-pods.md`](multi-container-pods.md) | Sidecars, init containers, per-container logs/exec |
 | [`deployments.md`](deployments.md) | Deployment generation, scaling, rollout, rollback, restart |
 | [`deployment-strategies.md`](deployment-strategies.md) | Blue/green (selector flip) and canary (shared label) |
-| [`probes.md`](probes.md) | Readiness vs liveness probes, handlers, timing |
+| [`probes.md`](probes.md) | Readiness vs liveness vs startup probes, handlers, timing, adding one to a live Deployment |
 | [`jobs-cronjobs.md`](jobs-cronjobs.md) | Job, CronJob, manual trigger from a CronJob |
 | [`statefulsets.md`](statefulsets.md) | StatefulSets, ordinals, partitioned rollout, headless service DNS |
 
