@@ -46,8 +46,8 @@ ckad-study-guide/
 | [07 · Services & Networking](notes/07-services-and-networking/) | Network policies, ingress |
 | [08 · State Persistence](notes/08-state-persistance/) | Volumes, PV/PVC, storage classes, StatefulSets, headless services |
 | [09 · Security](notes/09-security/) | AuthN/AuthZ, kubeconfig, RBAC, admission control, API versioning/deprecation, CRDs, operators |
-| [10 · Helm](notes/10-helm-fund/) | Charts, values, releases, lifecycle commands |
-| [11 · Kustomize](notes/11-kustomize/) | Bases/overlays, transformers, patches, components |
+| [10 · Helm](notes/10-helm-fund/) | Charts, values, releases, lifecycle commands, exam task patterns and traps |
+| [11 · Kustomize](notes/11-kustomize/) | Bases/overlays, transformers, patches, components, generators, exam field cheat-sheet |
 
 ## How to use it
 

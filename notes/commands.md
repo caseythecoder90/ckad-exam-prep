@@ -626,31 +626,41 @@ Full reference: [`commands/crd.md`](commands/crd.md).
 
 ```bash
 helm repo add bitnami https://charts.bitnami.com/bitnami
-helm repo update
-helm search hub wordpress                  # Artifact Hub  |  helm search repo (local)
-helm install wordpress bitnami/wordpress --set replicaCount=5 -f values.yaml
-helm upgrade wordpress bitnami/wordpress --set replicaCount=5
-helm rollback wordpress 1
-helm uninstall wordpress
-helm list -A
-helm history wordpress
-helm show values bitnami/wordpress
-helm template <release> <chart>            # render, no install
-helm pull --untar bitnami/wordpress
+helm repo update                           # before "upgrade to the newest version"
+helm search repo wordpress --versions      # all chart versions (without --versions: newest only)
+helm show values bitnami/wordpress         # find the value names BEFORE you --set anything
+helm install wp bitnami/wordpress -n web --create-namespace --version 12.1.0 --set replicaCount=5 -f values.yaml
+helm upgrade wp bitnami/wordpress -n web --reuse-values --set image.tag=6.4   # without --reuse-values, earlier --set values are LOST
+helm history wp -n web
+helm rollback wp 1 -n web                  # creates a NEW revision — it does not rewind
+helm ls -A -a                              # -a shows pending-*/failed releases that plain ls hides
+helm get values wp -n web                  # what the release was installed with
+helm template wp bitnami/wordpress -f values.yaml > out.yaml   # render, no release (then kubectl apply -n ...)
+helm pull bitnami/wordpress --version 12.1.0 --untar -d ./charts && helm install wp ./charts/wordpress
+helm uninstall wp -n web
 ```
 
-Value precedence: `--set` > `-f` > chart defaults. Full reference: [`commands/helm.md`](commands/helm.md).
+Value precedence: `--set` > `-f` > chart defaults. `-n` on every command. Full reference: [`commands/helm.md`](commands/helm.md); task patterns and traps: [`10-helm-fund/03-helm-exam-patterns.md`](10-helm-fund/03-helm-exam-patterns.md).
 
 ---
 
 ## 28. Kustomize
 
-Remember: `-k` runs the base+overlay merge; `-f` applies raw files.
+Remember: `-k` runs the base+overlay merge; `-f` applies raw files. The exam node has kubectl's built-in Kustomize only — do not count on a `kustomize` binary or `kustomize edit`.
 
 ```bash
-k apply -k <dir>                           # build + apply
-k delete -k <dir>
-k kustomize <dir>                          # render to stdout (no apply)
+k kustomize <dir>                          # render to stdout (no apply) — before every apply
+k kustomize <dir> > /path/rendered.yaml    # "save the rendered manifests"
+k apply -k <dir>                           # build + apply (never prunes)
+k delete -k <dir>                          # build + delete exactly what the overlay renders
+k diff -k <dir>
+```
+
+`kustomization.yaml` fields, one per requirement: `namespace`, `namePrefix`/`nameSuffix`, `labels` (list form; `commonLabels` also rewrites selectors), `commonAnnotations`, `replicas` (base name, before any prefix), `images` (matched by image name), `patches` (strategic merge fragment, or JSON 6902 ops + `target`; `~1` for `/` in a key), `configMapGenerator`/`secretGenerator` (hash suffix on; `options.disableNameSuffixHash`), `resources` (files and base directories), `components`.
+
+Standalone CLI, where it exists:
+
+```bash
 kustomize build <dir> | kubectl apply -f -
 kustomize create --autodetect --recursive
 kustomize edit set image nginx=haproxy:2.4
@@ -659,7 +669,7 @@ kustomize edit add resource ../../base
 kustomize edit add patch --path patch.yaml --group apps --version v1 --kind Deployment --name api
 ```
 
-Patches: strategic merge (keyed) or JSON6902 (`op`/`path`/`value`, positional list ops). No native rollback (`kubectl rollout undo`). Full reference: [`commands/kustomize.md`](commands/kustomize.md).
+No native rollback (`kubectl rollout undo`). Full reference: [`commands/kustomize.md`](commands/kustomize.md); exam view: [`11-kustomize/12-exam-patterns.md`](11-kustomize/12-exam-patterns.md).
 
 ---
 
