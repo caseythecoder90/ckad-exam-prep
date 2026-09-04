@@ -206,11 +206,72 @@ wordpress/
 
 ## 3. Helm repositories and search
 
-### Artifact Hub — the central chart registry
+### Hub, repo, chart, release — four nouns, four layers
 
-Artifact Hub (artifacthub.io) is the public registry for Helm charts, like
-Docker Hub is for container images. You can browse it via the web UI or
-search from the command line.
+Kustomize has no distribution layer: a base is a directory you point at.
+Helm adds packaging and distribution, and these four words are its layers.
+
+| Layer | What it physically is | Commands that touch it |
+|---|---|---|
+| **Hub** | artifacthub.io — a search engine over repos that registered with it. It hosts nothing. | `helm search hub` |
+| **Repo** | an HTTP server with packaged charts (`.tgz`) and one `index.yaml` listing every chart and version | `helm repo add/update/list`, `helm search repo` |
+| **Chart** | a directory (or that directory packaged as `<name>-<version>.tgz`): `Chart.yaml`, `values.yaml`, `templates/` | `helm show values`, `helm pull`, `helm install` |
+| **Release** | one installed copy of a chart, tracked as Secrets in its Namespace | `helm ls`, `upgrade`, `rollback`, `uninstall` |
+
+The hub is not a repository. It crawls the `index.yaml` of every registered
+repo so that `helm search hub` can tell you *which repo to add*; the charts
+themselves are downloaded from that repo. `helm search hub` therefore works
+with no repos configured, while `helm search repo` searches only the repos
+you added.
+
+A repo is deliberately dumb: static files behind any web server, which is
+why so many live on GitHub Pages (`https://<org>.github.io/<charts>`). The
+`index.yaml` is what `helm repo update` downloads into a local cache and what
+`helm search repo` reads:
+
+```yaml
+apiVersion: v1
+entries:
+  ingress-nginx:
+    - version: 4.15.1          # chart version — what --version selects
+      appVersion: 1.15.1       # the software inside
+      digest: 3eff0bd18151d6e6b1c441463410571443dda1ac78292cb189346628de784f0c
+      urls:
+        - https://github.com/kubernetes/ingress-nginx/releases/download/helm-chart-4.15.1/ingress-nginx-4.15.1.tgz
+    - ...                      # one block per older version
+```
+(excerpt of the real index as of 2026-09-04; abbreviated)
+
+**"Packaged" means a gzipped tar archive.** `helm package ./mychart` writes
+`mychart-1.0.0.tgz`, which is `tar -czf` of the chart directory: tar
+concatenates the files into one stream keeping paths and Unix permissions,
+gzip compresses the whole stream. A zip compresses each file separately and
+keeps an index (random access); a jar is a zip with `META-INF/MANIFEST.MF`.
+Helm chose tar+gzip because it is the Unix default and preserves file modes.
+`helm pull` downloads the `.tgz`, `--untar` extracts it (`tar -xzf`),
+`tar -tzf mychart-1.0.0.tgz` lists what is inside without extracting.
+
+```bash
+helm package ./mychart -d ./repo             # -> ./repo/mychart-1.0.0.tgz
+helm repo index ./repo --url https://example.com/repo    # writes ./repo/index.yaml
+# serve ./repo over HTTP and it is a chart repository
+```
+
+See each layer in a browser:
+
+- Hub: [artifacthub.io](https://artifacthub.io/); a chart page such as
+  [ingress-nginx](https://artifacthub.io/packages/helm/ingress-nginx/ingress-nginx)
+  shows the repo URL to add, the version list, and the default values.
+- Repo, raw: [kubernetes.github.io/ingress-nginx/index.yaml](https://kubernetes.github.io/ingress-nginx/index.yaml)
+  or [charts.jetstack.io/index.yaml](https://charts.jetstack.io/index.yaml)
+  (cert-manager). This is exactly what `helm search repo --versions` prints.
+- Chart source: [the ingress-nginx chart on GitHub](https://github.com/kubernetes/ingress-nginx/tree/main/charts/ingress-nginx)
+  — `values.yaml` next to `templates/` shows the `{{ .Values }}` plumbing.
+
+Newer charts are often published to container registries as OCI artifacts
+instead: no `helm repo add`, just
+`helm install x oci://ghcr.io/<org>/charts/<name> --version 1.2.3`.
+Artifact Hub indexes those too.
 
 ### Two search scopes
 
@@ -389,3 +450,5 @@ looks for a repo chart.
 - [Values Files](https://helm.sh/docs/chart_template_guide/values_files/) — the `.Values` object and the precedence order (`values.yaml` → `-f` → `--set`)
 - [Using Helm](https://helm.sh/docs/intro/using_helm/) — `helm search`, repo management, and the release lifecycle commands
 - [helm — CLI reference](https://helm.sh/docs/helm/helm/) — top-level command index and global flags
+- [The Chart Repository Guide](https://helm.sh/docs/topics/chart_repository/) — what a repo is (`index.yaml` + `.tgz` files on an HTTP server), `helm package`, `helm repo index`
+- [Use OCI-based registries](https://helm.sh/docs/topics/registries/) — installing and pushing charts via `oci://` without a repo

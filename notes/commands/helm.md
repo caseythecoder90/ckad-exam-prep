@@ -77,6 +77,17 @@ helm lint ./charts/<chart>
 helm version
 ```
 
+## Package a chart / publish a repo
+
+```bash
+helm package ./mychart -d ./repo                          # ./repo/mychart-1.0.0.tgz (a gzipped tar of the directory)
+helm repo index ./repo --url https://example.com/repo     # writes ./repo/index.yaml — that plus the .tgz files IS a repo
+tar -tzf ./repo/mychart-1.0.0.tgz                         # list the packaged files
+helm push mychart-1.0.0.tgz oci://ghcr.io/<org>/charts    # OCI registry instead of an index-based repo
+```
+
+Hub (artifacthub.io) = search over registered repos, hosts nothing. Repo = `index.yaml` + `.tgz` on an HTTP server. Chart = the directory/tarball. Release = an installed copy.
+
 ## Install Helm
 
 ```bash
