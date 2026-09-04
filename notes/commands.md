@@ -668,6 +668,7 @@ helm get values wp -n web                  # what the release was installed with
 helm template wp bitnami/wordpress -f values.yaml > out.yaml   # render, no release (then kubectl apply -n ...)
 helm pull bitnami/wordpress --version 12.1.0 --untar -d ./charts && helm install wp ./charts/wordpress
 helm uninstall wp -n web
+helm package ./chart -d ./repo && helm repo index ./repo   # a repo is just .tgz files + index.yaml on an HTTP server; the hub only indexes repos
 ```
 
 Value precedence: `--set` > `-f` > chart defaults. `-n` on every command. Full reference: [`commands/helm.md`](commands/helm.md); task patterns and traps: [`10-helm-fund/03-helm-exam-patterns.md`](10-helm-fund/03-helm-exam-patterns.md).
