@@ -700,7 +700,7 @@ kustomize edit add resource ../../base
 kustomize edit add patch --path patch.yaml --group apps --version v1 --kind Deployment --name api
 ```
 
-No native rollback (`kubectl rollout undo`). Full reference: [`commands/kustomize.md`](commands/kustomize.md); exam view: [`11-kustomize/12-exam-patterns.md`](11-kustomize/12-exam-patterns.md).
+No native rollback (`kubectl rollout undo`). Full reference: [`commands/kustomize.md`](commands/kustomize.md); exam view: [`11-kustomize/12-exam-patterns.md`](11-kustomize/12-exam-patterns.md); recall sheet for the no-docs reality: [`11-kustomize/13-memorize-cold.md`](11-kustomize/13-memorize-cold.md).
 
 ---
 

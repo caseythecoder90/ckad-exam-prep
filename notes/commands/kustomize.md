@@ -69,6 +69,16 @@ components:
 
 Legacy fields `patchesStrategicMerge:` / `patchesJson6902:` still work; write `patches:`.
 
+JSON 6902 pointer escaping (RFC 6901) — **`~` -> `~0` first, then `/` -> `~1`**; dots and dashes are never escaped, and escaping applies to `path:` only, never to a key inside `value:`:
+
+```
+app.kubernetes.io/managed-by                -> app.kubernetes.io~1managed-by
+nginx.ingress.kubernetes.io/rewrite-target  -> nginx.ingress.kubernetes.io~1rewrite-target
+cost~center                                 -> cost~0center
+```
+
+`add` = create-or-overwrite (and **inserts** at a list index, shifting the rest); `replace` and `remove` error when the path does not exist. `add`/`replace` on a bare list index swap the **whole** element — extend the path (`/containers/0/image`) to edit one field.
+
 ## Standalone CLI (where it exists)
 
 ```bash
@@ -103,5 +113,5 @@ Install: `curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/m
 
 ## See also
 
-- `11-kustomize/` — chapters 01-10 (problem statement → components), 11 (generators), 12 (exam patterns and traps)
+- `11-kustomize/` — chapters 01-10 (problem statement → components), 11 (generators), 12 (exam patterns and traps), 13 (memorize-cold recall sheet — no Kustomize docs on the exam)
 - `helm.md` — the templating alternative
